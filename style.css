@@ -1,0 +1,868 @@
+/* =============================================
+   HEX BOARD – style.css
+   ============================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&display=swap');
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --accent: #f5c518;
+    --cell-default: #6b7280;
+    /* grey */
+    --cell-marked: #2d6aa0;
+    /* blue */
+    --cell-stroke: #374151;
+    --cell-marked-stroke: #1a4f7a;
+    --text-primary: #f0f0f0;
+    --text-muted: #888;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 32px 24px 48px;
+    gap: 28px;
+}
+
+/* ── Contadores de monedas ── */
+.counters {
+    display: flex;
+    gap: 24px;
+}
+
+.counter {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 16px 28px;
+    min-width: 160px;
+}
+
+.counter-red {
+    border-color: rgba(192, 57, 43, 0.5);
+}
+
+.counter-green {
+    border-color: rgba(39, 174, 96, 0.5);
+}
+
+.counter-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #ccc;
+}
+
+.counter-coins {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.coin-value {
+    font-size: 2.2rem;
+    font-weight: 900;
+    min-width: 48px;
+    text-align: center;
+    line-height: 1;
+}
+
+.counter-red .coin-value {
+    color: #e74c3c;
+}
+
+.counter-green .coin-value {
+    color: #2ecc71;
+}
+
+.coin-btn {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.12s ease, filter 0.12s ease;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ccc;
+    line-height: 1;
+}
+
+.coin-btn:hover {
+    transform: scale(1.15);
+    filter: brightness(1.4);
+}
+
+.coin-btn:active {
+    transform: scale(0.92);
+}
+
+.counter-sub {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+/* ── Header ── */
+header {
+    text-align: center;
+}
+
+header h1 {
+    font-size: 2.6rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    background: linear-gradient(135deg, #a0aec0, #cbd5e0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 2px 10px rgba(160, 174, 192, 0.3));
+}
+
+header p {
+    margin-top: 6px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+}
+
+/* ── Board container ── */
+#board-container {
+    filter: drop-shadow(0 8px 40px rgba(0, 0, 0, 0.7));
+}
+
+svg {
+    display: block;
+}
+
+/* ── Hex cells ── */
+.hex-cell {
+    cursor: pointer;
+}
+
+.hex-cell .hex-bg {
+    fill: var(--cell-default);
+    stroke: var(--cell-stroke);
+    stroke-width: 2;
+    transition: fill 0.18s ease, filter 0.15s ease;
+}
+
+.hex-cell:hover .hex-bg {
+    filter: brightness(1.25);
+}
+
+.hex-cell.marked .hex-bg {
+    fill: var(--cell-marked);
+    stroke: var(--cell-marked-stroke);
+}
+
+.hex-cell.marked:hover .hex-bg {
+    filter: brightness(1.15);
+}
+
+/* ── Selección rosa ── */
+.hex-cell.selected .hex-bg {
+    fill: #e91e8c;
+    stroke: #a0125f;
+    transition: fill 0.15s ease;
+}
+
+.hex-cell.selected:hover .hex-bg {
+    filter: brightness(1.2);
+}
+
+
+/* ── Casillas fijas ── */
+.hex-cell.fixed-blue .hex-bg {
+    fill: var(--cell-marked);
+    stroke: var(--cell-marked-stroke);
+}
+
+.hex-cell.fixed-blue {
+    cursor: default;
+}
+
+.hex-cell.fixed-red .hex-bg {
+    fill: #c0392b;
+    stroke: #922b21;
+}
+
+.hex-cell.fixed-red {
+    cursor: default;
+}
+
+.hex-cell.fixed-green .hex-bg {
+    fill: #27ae60;
+    stroke: #1a7a42;
+}
+
+.hex-cell.fixed-green {
+    cursor: default;
+}
+
+.hex-cell.fixed-yellow .hex-bg {
+    fill: #f1c40f;
+    stroke: #b7950b;
+}
+
+.hex-cell.fixed-yellow {
+    cursor: default;
+}
+
+.hex-cell.fixed-orange .hex-bg {
+    fill: #e67e22;
+    stroke: #a04000;
+}
+
+.hex-cell.fixed-orange {
+    cursor: default;
+}
+
+.hex-cell.fixed-white .hex-bg {
+    fill: #ecf0f1;
+    stroke: #bdc3c7;
+}
+
+.hex-cell.fixed-white {
+    cursor: default;
+}
+
+
+
+
+/* ── Footer hint ── */
+footer {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    text-align: center;
+    line-height: 1.7;
+}
+
+footer kbd {
+    background: #2d2d4e;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: #ccc;
+}
+
+/* ── Toolbar ── */
+.toolbar {
+    display: flex;
+    gap: 12px;
+}
+
+.toolbar button {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 10px 22px;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+#btn-export {
+    background: linear-gradient(135deg, #2d6aa0, #1a4f7a);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(45, 106, 160, 0.4);
+}
+
+#btn-export:hover {
+    filter: brightness(1.2);
+    transform: scale(1.04);
+}
+
+#btn-clear {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--text-muted);
+    border: 1px solid #333;
+}
+
+#btn-clear:hover {
+    background: rgba(255, 80, 80, 0.15);
+    color: #ff6b6b;
+    border-color: #ff6b6b;
+    transform: scale(1.04);
+}
+
+/* ── Export Modal ── */
+.modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-backdrop.open {
+    display: flex;
+}
+
+.modal-box {
+    background: #1e2140;
+    border: 1px solid #2d6aa0;
+    border-radius: 16px;
+    padding: 32px 36px;
+    width: min(520px, 90vw);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 0 40px rgba(45, 106, 160, 0.3);
+    animation: pop-in 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes pop-in {
+    from {
+        transform: scale(0.85);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.modal-box h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #f0f0f0;
+}
+
+.modal-box p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.modal-box code {
+    background: #2a2d50;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: #7eb8f7;
+}
+
+#export-output {
+    width: 100%;
+    height: 110px;
+    background: #12142a;
+    border: 1px solid #2d6aa0;
+    border-radius: 8px;
+    color: #a8d8ff;
+    font-family: monospace;
+    font-size: 0.8rem;
+    padding: 10px 12px;
+    resize: none;
+    outline: none;
+    line-height: 1.5;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.modal-actions button {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 8px 22px;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+#btn-copy {
+    background: linear-gradient(135deg, #2d6aa0, #1a4f7a);
+    color: #fff;
+}
+
+#btn-copy:hover {
+    filter: brightness(1.2);
+    transform: scale(1.04);
+}
+
+.modal-actions button:last-child {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--text-muted);
+    border: 1px solid #333;
+}
+
+.modal-actions button:last-child:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ccc;
+}
+
+/* ══════════════════════════════════════════
+   GAME UI
+   ══════════════════════════════════════════ */
+
+/* ── Turn banner ── */
+#turn-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50px;
+    padding: 10px 24px;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.turn-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #e74c3c;
+    box-shadow: 0 0 8px currentColor;
+    transition: background 0.3s;
+}
+
+#btn-end-turn {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 7px 18px;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(135deg, #4a4a7a, #2d2d50);
+    color: #ccc;
+    transition: filter 0.15s, transform 0.15s;
+    margin-left: 8px;
+}
+
+#btn-end-turn:hover {
+    filter: brightness(1.3);
+    transform: scale(1.04);
+}
+
+/* ── Ship shop ── */
+#ship-shop-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.shop-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.ship-shop-grid {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.ship-buy-btn {
+    font-family: 'Outfit', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.06);
+    color: #f0f0f0;
+    cursor: pointer;
+    transition: transform 0.15s, filter 0.15s, border-color 0.15s;
+    min-width: 80px;
+}
+
+.ship-buy-btn:hover:not(.disabled) {
+    transform: scale(1.07);
+    filter: brightness(1.3);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.ship-buy-btn.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.ship-icon {
+    font-size: 1.4rem;
+    line-height: 1;
+}
+
+.ship-name {
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.ship-cost {
+    font-size: 0.7rem;
+    color: #f5c518;
+}
+
+/* ── Move panel ── */
+#move-panel {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    padding: 16px 24px;
+    min-width: 260px;
+}
+
+.move-panel-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #ccc;
+}
+
+.move-panel-sub {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.move-count-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.move-count-btn {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    color: #f0f0f0;
+    cursor: pointer;
+    transition: transform 0.12s, filter 0.12s;
+}
+
+.move-count-btn:hover:not(:disabled) {
+    transform: scale(1.15);
+    filter: brightness(1.4);
+}
+
+.move-count-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.move-cancel-btn {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.8rem;
+    padding: 6px 16px;
+    border-radius: 50px;
+    border: 1px solid #444;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.move-cancel-btn:hover {
+    color: #ff6b6b;
+    border-color: #ff6b6b;
+}
+
+/* ── Status bar ── */
+.game-status {
+    font-size: 0.82rem;
+    color: #aaa;
+    text-align: center;
+    min-height: 1.2em;
+    font-style: italic;
+}
+
+/* ── Cell highlights ── */
+.hex-cell.cell-highlight-spawn .hex-bg {
+    stroke: #f5c518;
+    stroke-width: 3;
+    filter: brightness(1.3);
+}
+
+.hex-cell.cell-highlight-move .hex-bg {
+    stroke: #e91e8c;
+    stroke-width: 3;
+    filter: brightness(1.25);
+}
+
+.hex-cell.cell-selected .hex-bg {
+    stroke: #f5c518;
+    stroke-width: 3.5;
+    filter: brightness(1.4);
+}
+
+/* ── Ship tooltip ── */
+.ship-tooltip {
+    position: fixed;
+    z-index: 9999;
+    background: rgba(20, 20, 40, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.8rem;
+    color: #f0f0f0;
+    pointer-events: none;
+    min-width: 130px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.tt-title {
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #aaa;
+    margin-bottom: 6px;
+}
+
+.tt-player {
+    font-weight: 700;
+    font-size: 0.78rem;
+    margin-top: 4px;
+    margin-bottom: 2px;
+}
+
+.tt-red {
+    color: #ff6b6b;
+}
+
+.tt-green {
+    color: #2ecc71;
+}
+
+.tt-ship {
+    padding-left: 10px;
+    font-size: 0.78rem;
+    color: #ccc;
+    line-height: 1.6;
+}
+
+.tt-moved {
+    font-size: 0.68rem;
+    color: #888;
+    font-style: italic;
+}
+
+/* ── Ship pick list ── */
+.ship-pick-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+}
+
+.ship-pick-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.82rem;
+    transition: background 0.12s;
+}
+
+.ship-pick-row:hover:not(.ship-moved) {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.ship-pick-row.ship-moved {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.ship-pick-row input[type="checkbox"] {
+    accent-color: #e91e8c;
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+}
+
+/* ── Debug button ── */
+#btn-debug {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--text-muted);
+    border: 1px solid #444 !important;
+    box-shadow: none !important;
+}
+
+#btn-debug:hover {
+    filter: brightness(1.3);
+    transform: scale(1.04);
+}
+
+#btn-debug.debug-active {
+    background: linear-gradient(135deg, #8b0000, #c0392b);
+    color: #fff;
+    border-color: #e74c3c !important;
+    box-shadow: 0 0 12px rgba(231, 76, 60, 0.5) !important;
+}
+
+/* ── Move Modal ── */
+.move-modal-content {
+    background: #1a1a2e;
+    border: 2px solid #555;
+    width: 90%;
+    max-width: 340px;
+    padding: 20px;
+}
+
+.move-count-row {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.move-count-btn {
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    border: 1px solid #666;
+    border-radius: 6px;
+    background: #2a2a3e;
+    color: #eee;
+    cursor: pointer;
+    white-space: nowrap;
+    min-width: 100px;
+    text-align: center;
+}
+
+.move-count-btn:hover {
+    background: #3a3a55;
+}
+
+
+/* ── Battle Modal ── */
+.battle-content {
+    background: #1a1a2e;
+    border: 2px solid #444;
+    width: 90%;
+    max-width: 500px;
+    text-align: center;
+}
+
+.battle-title {
+    color: #e91e8c;
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.battle-arena {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.battle-side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 15px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    min-width: 120px;
+}
+
+.side-attacker {
+    border: 2px solid #e74c3c;
+}
+
+.side-defender {
+    border: 2px solid #2ecc71;
+}
+
+.battle-side-title {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #aaa;
+}
+
+.battle-stat {
+    font-size: 1.1rem;
+}
+
+.battle-total {
+    font-size: 1.4rem;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+.battle-dice {
+    font-size: 3rem;
+    transition: transform 0.3s;
+}
+
+.battle-vs {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #f5c518;
+    font-style: italic;
+}
+
+.battle-result {
+    font-size: 1.3rem;
+    font-weight: bold;
+    min-height: 1.6em;
+    margin-bottom: 20px;
+    color: #fff;
+}

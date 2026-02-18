@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hex Board</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+    <header>
+        <h1>⬡ HEX BOARD</h1>
+    </header>
+
+    <!-- Banner de turno -->
+    <div id="turn-banner">
+        <span id="turn-dot" class="turn-dot"></span>
+        <span id="turn-label">Turno: Jugador Rojo</span>
+        <button id="btn-end-turn" onclick="endTurn()">Terminar turno ➜</button>
+    </div>
+
+    <!-- Contadores de monedas -->
+    <div class="counters">
+        <div class="counter counter-red">
+            <div class="counter-label">🔴 Jugador Rojo</div>
+            <div class="counter-coins">
+                <button class="coin-btn" onclick="addCoins('red', -1)">−</button>
+                <span class="coin-value" id="coins-red">0</span>
+                <button class="coin-btn" onclick="addCoins('red', 1)">+</button>
+            </div>
+            <div class="counter-sub">monedas</div>
+        </div>
+        <div class="counter counter-green">
+            <div class="counter-label">🟢 Jugador Verde</div>
+            <div class="counter-coins">
+                <button class="coin-btn" onclick="addCoins('green', -1)">−</button>
+                <span class="coin-value" id="coins-green">0</span>
+                <button class="coin-btn" onclick="addCoins('green', 1)">+</button>
+            </div>
+            <div class="counter-sub">monedas</div>
+        </div>
+    </div>
+
+    <!-- Tienda de naves -->
+    <div id="ship-shop-panel">
+        <div class="shop-title">🚀 Comprar nave</div>
+        <div id="ship-shop" class="ship-shop-grid"></div>
+    </div>
+
+    <!-- Tablero -->
+    <div id="board-container">
+        <svg id="hex-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <!-- Panel de movimiento -->
+    <div id="move-panel" style="display:none;"></div>
+
+    <!-- Barra de estado -->
+    <div id="game-status" class="game-status"></div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <button id="btn-export" onclick="exportConfig()">📋 Exportar selección</button>
+        <button id="btn-clear" onclick="clearAll()">🗑 Limpiar selección</button>
+        <button id="btn-debug" onclick="toggleDebugMode()">🛠 Modo Debug</button>
+        <button id="btn-new-game" onclick="resetGame()" style="margin-left:auto; background:#c0392b;">🔥 Nueva
+            Partida</button>
+    </div>
+
+
+    <!-- Modal de exportación -->
+    <div id="export-modal" class="modal-backdrop" onclick="closeModal(event)">
+        <div class="modal-box">
+            <h2>📋 Casillas seleccionadas</h2>
+            <p>Array de casillas actualmente en rosa:</p>
+            <textarea id="export-output" readonly></textarea>
+            <div class="modal-actions">
+                <button id="btn-copy" onclick="copyOutput()">Copiar</button>
+                <button onclick="document.getElementById('export-modal').classList.remove('open')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Movimiento -->
+    <div id="move-modal" class="modal-backdrop" style="display:none; z-index:9000;"></div>
+
+    <!-- Modal de Batalla -->
+
+    <div id="battle-modal" class="modal-backdrop" style="display:none; z-index:10000;">
+        <div class="modal-content battle-content">
+            <h2 class="battle-title">⚔️ ¡BATALLA! ⚔️</h2>
+            <div class="battle-arena">
+                <div class="battle-side side-attacker">
+                    <div class="battle-side-title">ATACANTE</div>
+                    <div id="battle-atk-str" class="battle-stat">Fuerza: 0</div>
+                    <div id="battle-atk-dice" class="battle-dice fa-spin">🎲</div>
+                    <div id="battle-atk-total" class="battle-total">Total: 0</div>
+                </div>
+                <div class="battle-vs">VS</div>
+                <div class="battle-side side-defender">
+                    <div class="battle-side-title">DEFENSOR</div>
+                    <div id="battle-def-str" class="battle-stat">Fuerza: 0</div>
+                    <div id="battle-def-dice" class="battle-dice fa-spin">🎲</div>
+                    <div id="battle-def-total" class="battle-total">Total: 0</div>
+                </div>
+            </div>
+            <div id="battle-result" class="battle-result"></div>
+            <button id="btn-roll-dice" class="modal-btn btn-confirm" onclick="rollBattleDice()">🎲 TIRAR DADOS</button>
+            <button id="btn-close-battle" class="modal-btn btn-cancel" onclick="closeBattleModal()"
+                style="display:none;">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- Tooltip de naves -->
+    <div id="ship-tooltip" class="ship-tooltip" style="display:none;"></div>
+
+    <script src="board.js"></script>
+
+    <script src="game.js"></script>
+    <script>
+        // Inicializar el juego tras cargar ambos scripts
+        initGame();
+    </script>
+</body>
+
+</html>
