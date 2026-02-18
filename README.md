@@ -1,4 +1,4 @@
-# 🚀 Helion Delta – Juego de Mesa Hexagonal
+# 🚀 Helion Delta – Juego de Mesa 
 
 **Helion Delta** es un juego de estrategia por turnos para 2 jugadores ambientado en el espacio, jugado sobre un tablero hexagonal.
 
