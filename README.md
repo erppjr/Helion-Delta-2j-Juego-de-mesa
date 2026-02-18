@@ -1,58 +1,55 @@
-# ⬡ Helion Delta – Juego de Mesa Hexagonal
+# 🚀 Helion Delta – Juego de Mesa Hexagonal
 
-Juego de estrategia por turnos para 2 jugadores en un tablero hexagonal. Conquista la base enemiga moviendo flotas, controlando planetas y ganando batallas.
+**Helion Delta** es un juego de estrategia por turnos para 2 jugadores ambientado en el espacio, jugado sobre un tablero hexagonal.
 
-## 🎮 Cómo jugar
+> ⚠️ **Este proyecto no está acabado.** Lo que ves aquí es la **base jugable** del juego, con las mecánicas fundamentales implementadas. Se seguirá desarrollando.
 
-Abre `index.html` en cualquier navegador moderno. No requiere servidor ni dependencias.
+---
 
-### Objetivo
-- **Rojo** debe colocar una nave en la casilla `10,10` (base Verde).
-- **Verde** debe colocar una nave en la casilla `0,0` (base Roja).
+## 🎮 Mecánicas implementadas
 
-### Turnos
-Cada turno puedes:
-1. **Comprar naves** en la tienda lateral (si tienes monedas).
-2. **Mover flotas** haciendo clic en una casilla con naves propias.
-3. **Atacar** flotas enemigas adyacentes tras mover.
-4. **Terminar turno** para pasar al siguiente jugador.
-
-### Naves
-
-| Nave | Coste | Fuerza | Velocidad |
-|------|-------|--------|-----------|
-| Nave I (▲) | 3 🪙 | 2 ⚔️ | 2 casillas |
-| Nave II (◆) | 6 🪙 | 4 ⚔️ | 2 casillas |
-| Nave III (★) | 15 🪙 | 6 ⚔️ | 1 casilla |
-| Nave IV (⬟) | 20 🪙 | 8 ⚔️ | 1 casilla |
-
-### Flotas
-- Máximo **5 naves** por casilla.
-- La velocidad de una flota está **limitada por la nave más lenta**.
-- Botón **"✂️ Dividir flota"** para mover solo algunas naves.
-
-### Planetas
-Los planetas generan **ingresos al inicio de cada turno**. Su propietario cambia si hay naves de un jugador en la casilla.
-
-### Combate
-- Se activa al mover junto a una flota enemiga.
-- Cada bando suma su **fuerza total + 1D6**.
-- El perdedor es **eliminado por completo**.
-- En caso de empate se repite la tirada.
+| Mecánica | Descripción |
+|---|---|
+| **Tablero Hex** | Mapa hexagonal con casillas de colores y zonas configurables |
+| **Naves** | 4 tipos de nave con costes, velocidad y fuerza distintos |
+| **Movimiento** | Movimiento por BFS con rango variable (1-2 casillas según nave) |
+| **Flotas** | Agrupación de naves; velocidad limitada por la nave más lenta |
+| **Planetas** | Generan ingresos por turno; propiedad dinámica según presencia |
+| **Batallas** | Combate por dados (Fuerza + D6 vs Fuerza + D6) |
+| **Condición de victoria** | Conquistar la base enemiga |
+| **Persistencia** | Guardado automático en localStorage |
 
 ## 🛠 Tecnologías
-- HTML5 + CSS3 + JavaScript vanilla
-- SVG para el tablero hexagonal
-- localStorage para guardar la partida
+
+- HTML5 / CSS3 / JavaScript vanilla
+- SVG para el renderizado del tablero
+- Sin dependencias externas
+
+## ▶️ Cómo jugar
+
+1. Abre `index.html` en cualquier navegador moderno.
+2. Jugador **Rojo** empieza. Compra naves en la tienda y colócalas en tus casillas de inicio.
+3. Mueve tus naves por el tablero, conquista planetas y ataca al enemigo.
+4. **Gana** el jugador que logre colocar una nave en la base enemiga.
 
 ## 📁 Estructura
+
 ```
-├── index.html   → Página principal
-├── board.js     → Generación del tablero hexagonal (SVG)
-├── game.js      → Lógica del juego (naves, planetas, batalla)
-├── style.css    → Estilos y tema oscuro
-└── .gitignore
+├── index.html    → Estructura HTML y modales
+├── style.css     → Estilos del tablero, paneles y modales
+├── board.js      → Generación y renderizado del tablero hexagonal
+├── game.js       → Toda la lógica del juego
+└── README.md
 ```
 
-## 📜 Licencia
-Proyecto personal.
+## 📋 Por hacer
+
+- [ ] Más tipos de planetas y eventos
+- [ ] Mejoras de UI/UX
+- [ ] IA para jugar contra la máquina
+- [ ] Modo multijugador online
+- [ ] Efectos de sonido y animaciones
+
+---
+
+*Proyecto en desarrollo activo.*
