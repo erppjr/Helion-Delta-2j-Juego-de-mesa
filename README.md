@@ -49,6 +49,8 @@
 - [ ] IA para jugar contra la máquina
 - [ ] Modo multijugador online
 - [ ] Efectos de sonido y animaciones
+- [ ] Implementación de cartas y nuevas mecánicas
+
 
 ---
 
