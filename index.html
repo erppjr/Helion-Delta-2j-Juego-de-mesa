@@ -14,59 +14,96 @@
         <h1>🚀 HELION DELTA</h1>
     </header>
 
-    <!-- Banner de turno -->
-    <div id="turn-banner">
-        <span id="turn-dot" class="turn-dot"></span>
-        <span id="turn-label">Turno: Jugador Rojo</span>
-        <button id="btn-end-turn" onclick="endTurn()">Terminar turno ➜</button>
-    </div>
+    <div class="game-layout">
 
-    <!-- Contadores de monedas -->
-    <div class="counters">
-        <div class="counter counter-red">
-            <div class="counter-label">🔴 Jugador Rojo</div>
-            <div class="counter-coins">
-                <button class="coin-btn" onclick="addCoins('red', -1)">−</button>
-                <span class="coin-value" id="coins-red">0</span>
-                <button class="coin-btn" onclick="addCoins('red', 1)">+</button>
+        <!-- LADO IZQUIERDO: Tablero -->
+        <main class="main-content">
+            <div id="board-container">
+                <svg id="hex-svg" xmlns="http://www.w3.org/2000/svg"></svg>
             </div>
-            <div class="counter-sub">monedas</div>
-        </div>
-        <div class="counter counter-green">
-            <div class="counter-label">🟢 Jugador Verde</div>
-            <div class="counter-coins">
-                <button class="coin-btn" onclick="addCoins('green', -1)">−</button>
-                <span class="coin-value" id="coins-green">0</span>
-                <button class="coin-btn" onclick="addCoins('green', 1)">+</button>
+
+            <!-- Panel de movimiento -->
+            <div id="move-panel" style="display:none;"></div>
+
+            <!-- Barra de estado -->
+            <div id="game-status" class="game-status"></div>
+
+            <!-- Toolbar (Debug y utils) -->
+            <div class="toolbar">
+                <button id="btn-export" onclick="exportConfig()" style="display:none;">📋 Exportar selección</button>
+                <button id="btn-clear" onclick="clearAll()" style="display:none;">🗑 Limpiar selección</button>
+                <button id="btn-debug-select" onclick="toggleDebugSelect()" style="display:none;">🌸 Selección
+                    Rosa</button>
+                <button id="btn-debug" onclick="toggleDebugMode()">🛠 Modo Debug</button>
+                <button id="btn-new-game" onclick="resetGame()" style="margin-left:auto; background:#c0392b;">🔥 Nueva
+                    Partida</button>
             </div>
-            <div class="counter-sub">monedas</div>
+        </main>
+
+        <!-- LADO DERECHO: Barra Lateral -->
+        <aside class="sidebar">
+            <!-- Banner de turno -->
+            <div id="turn-banner">
+                <span id="turn-dot" class="turn-dot"></span>
+                <span id="turn-label">Turno: Jugador Rojo</span>
+                <button id="btn-end-turn" onclick="endTurn()">Terminar turno ➜</button>
+            </div>
+
+            <!-- Contadores de monedas -->
+            <div class="counters">
+                <div class="counter counter-red">
+                    <div class="counter-label">🔴 Jugador Rojo</div>
+                    <div class="counter-coins">
+                        <button class="coin-btn" onclick="addCoins('red', -1)" style="display:none;">−</button>
+                        <span class="coin-value" id="coins-red">0</span>
+                        <button class="coin-btn" onclick="addCoins('red', 1)" style="display:none;">+</button>
+                    </div>
+                    <!-- Mano de cartas -->
+                    <div class="player-hand-label">🃏 Cartas (<span id="hand-count-red">0</span>/6)</div>
+                    <div class="player-hand" id="hand-red"><span class="hand-empty">Sin cartas</span></div>
+                </div>
+
+                <div class="counter counter-green">
+                    <div class="counter-label">🟢 Jugador Verde</div>
+                    <div class="counter-coins">
+                        <button class="coin-btn" onclick="addCoins('green', -1)" style="display:none;">−</button>
+                        <span class="coin-value" id="coins-green">0</span>
+                        <button class="coin-btn" onclick="addCoins('green', 1)" style="display:none;">+</button>
+                    </div>
+                    <!-- Mano de cartas -->
+                    <div class="player-hand-label">🃏 Cartas (<span id="hand-count-green">0</span>/6)</div>
+                    <div class="player-hand" id="hand-green"><span class="hand-empty">Sin cartas</span></div>
+                </div>
+            </div>
+
+            <!-- Botón para abrir Modal de Tienda -->
+            <button id="btn-open-shop" class="card-buy-btn"
+                style="width: 100%; padding: 15px; font-size: 1.2rem; margin-top: 10px;" onclick="openShopModal()">🛒
+                ABRIR TIENDA</button>
+        </aside>
+
+    </div>
+
+    <!-- Modal Global de Tienda -->
+    <div id="global-shop-modal" class="modal-backdrop" style="display:none; z-index:9000;">
+        <div class="modal-content shop-modal-content" style="max-width: 800px; width: 90%;">
+            <h2 class="battle-title" style="margin-bottom: 20px;">🛒 Tienda Galáctica</h2>
+            <div class="shop-modal-grid">
+                <!-- Tienda de naves -->
+                <div id="ship-shop-panel">
+                    <div class="shop-title">🚀 Comprar nave</div>
+                    <div id="ship-shop" class="ship-shop-grid"></div>
+                </div>
+
+                <!-- Tienda de cartas -->
+                <div id="card-shop-panel">
+                    <div class="shop-title">🂠 Cartas de habilidad</div>
+                    <button id="btn-buy-card" class="card-buy-btn" onclick="buyCard()">🂠 Comprar carta — 3💰</button>
+                </div>
+            </div>
+            <button class="modal-btn btn-cancel" style="margin-top: 25px; width: 100%;" onclick="closeShopModal()">✖
+                Cerrar Tienda</button>
         </div>
-    </div>
-
-    <!-- Tienda de naves -->
-    <div id="ship-shop-panel">
-        <div class="shop-title">🚀 Comprar nave</div>
-        <div id="ship-shop" class="ship-shop-grid"></div>
-    </div>
-
-    <!-- Tablero -->
-    <div id="board-container">
-        <svg id="hex-svg" xmlns="http://www.w3.org/2000/svg"></svg>
-    </div>
-
-    <!-- Panel de movimiento -->
-    <div id="move-panel" style="display:none;"></div>
-
-    <!-- Barra de estado -->
-    <div id="game-status" class="game-status"></div>
-
-    <!-- Toolbar -->
-    <div class="toolbar">
-        <button id="btn-export" onclick="exportConfig()">📋 Exportar selección</button>
-        <button id="btn-clear" onclick="clearAll()">🗑 Limpiar selección</button>
-        <button id="btn-debug" onclick="toggleDebugMode()">🛠 Modo Debug</button>
-        <button id="btn-new-game" onclick="resetGame()" style="margin-left:auto; background:#c0392b;">🔥 Nueva
-            Partida</button>
     </div>
 
 
@@ -80,6 +117,21 @@
                 <button id="btn-copy" onclick="copyOutput()">Copiar</button>
                 <button onclick="document.getElementById('export-modal').classList.remove('open')">Cerrar</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal de Carta -->
+    <div id="card-modal" class="modal-backdrop" style="display:none; z-index:9500;">
+        <div class="modal-content card-modal-content">
+            <h2 id="cm-title" class="battle-title" style="margin-bottom:10px;">Nombre</h2>
+            <div id="cm-desc" style="color:#bdc3c7; font-size:1.1rem; margin-bottom:20px; line-height:1.4;">Desc</div>
+            <div class="move-count-row" style="gap:10px;">
+                <button id="cm-btn-play" class="ship-buy-btn" style="background:#3498db; flex:1;">🎮 Jugar</button>
+                <button id="cm-btn-sell" class="ship-buy-btn" style="background:#f1c40f; color:#333; flex:1;">💸
+                    Vender</button>
+            </div>
+            <button class="move-cancel-btn" style="margin-top:15px; width:100%;"
+                onclick="closeCardModal()">Cerrar</button>
         </div>
     </div>
 
@@ -117,6 +169,8 @@
     <div id="ship-tooltip" class="ship-tooltip" style="display:none;"></div>
 
     <script src="board.js"></script>
+
+    <script src="cards.js"></script>
 
     <script src="game.js"></script>
     <script>

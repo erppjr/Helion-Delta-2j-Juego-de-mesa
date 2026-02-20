@@ -36,18 +36,44 @@ body {
     background: var(--bg);
     color: var(--text-primary);
     min-height: 100vh;
+    padding: 20px;
+}
+
+/* ── Game Layout ── */
+.game-layout {
+    display: flex;
+    gap: 30px;
+    max-width: 1400px;
+    margin: 0 auto;
+    align-items: flex-start;
+}
+
+.main-content {
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
-    padding: 32px 24px 48px;
-    gap: 28px;
+    gap: 20px;
+}
+
+.sidebar {
+    width: 320px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: -4px 0 15px rgba(0, 0, 0, 0.3);
 }
 
 /* ── Contadores de monedas ── */
 .counters {
     display: flex;
-    gap: 24px;
+    flex-direction: column;
+    gap: 15px;
 }
 
 .counter {
@@ -278,6 +304,33 @@ footer kbd {
     color: #ccc;
 }
 
+/* ── Turn colors ── */
+.turn-red #turn-label {
+    color: #e74c3c;
+}
+
+.turn-red .turn-dot {
+    background: #e74c3c;
+    box-shadow: 0 0 8px currentColor;
+}
+
+.turn-green #turn-label {
+    color: #2ecc71;
+}
+
+.turn-green .turn-dot {
+    background: #2ecc71;
+    box-shadow: 0 0 8px currentColor;
+}
+
+.turn-red #btn-end-turn {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.turn-green #btn-end-turn {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+}
+
 /* ── Toolbar ── */
 .toolbar {
     display: flex;
@@ -437,17 +490,18 @@ footer kbd {
    GAME UI
    ══════════════════════════════════════════ */
 
-/* ── Turn banner ── */
+/* ── Turn Banner ── */
 #turn-banner {
     display: flex;
     align-items: center;
-    gap: 14px;
+    justify-content: space-between;
+    gap: 10px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 12px 16px;
     border-radius: 50px;
-    padding: 10px 24px;
-    font-size: 1rem;
-    font-weight: 700;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    width: 100%;
 }
 
 .turn-dot {
@@ -457,24 +511,34 @@ footer kbd {
     background: #e74c3c;
     box-shadow: 0 0 8px currentColor;
     transition: background 0.3s;
+    flex-shrink: 0;
+}
+
+#turn-label {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    flex-grow: 1;
+    text-align: center;
 }
 
 #btn-end-turn {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
     font-family: 'Outfit', sans-serif;
     font-size: 0.85rem;
     font-weight: 700;
-    padding: 7px 18px;
-    border-radius: 50px;
-    border: none;
+    border-radius: 20px;
     cursor: pointer;
-    background: linear-gradient(135deg, #4a4a7a, #2d2d50);
-    color: #ccc;
-    transition: filter 0.15s, transform 0.15s;
-    margin-left: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+    flex-shrink: 0;
 }
 
 #btn-end-turn:hover {
-    filter: brightness(1.3);
+    filter: brightness(1.2);
     transform: scale(1.04);
 }
 
@@ -753,6 +817,26 @@ footer kbd {
     box-shadow: 0 0 12px rgba(231, 76, 60, 0.5) !important;
 }
 
+/* ── Botón Selección Rosa (sub-modo debug) ── */
+#btn-debug-select {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--text-muted);
+    border: 1px solid #555 !important;
+    box-shadow: none !important;
+}
+
+#btn-debug-select:hover {
+    filter: brightness(1.3);
+    transform: scale(1.04);
+}
+
+#btn-debug-select.debug-active {
+    background: linear-gradient(135deg, #6a0050, #e91e8c);
+    color: #fff;
+    border-color: #e91e8c !important;
+    box-shadow: 0 0 12px rgba(233, 30, 140, 0.5) !important;
+}
+
 /* ── Move Modal ── */
 .move-modal-content {
     background: #1a1a2e;
@@ -865,4 +949,176 @@ footer kbd {
     min-height: 1.6em;
     margin-bottom: 20px;
     color: #fff;
+}
+
+/* =========================================
+   SISTEMA DE CARTAS
+   ========================================= */
+
+#card-shop-panel {
+    background: rgba(15, 15, 20, 0.95);
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 10px 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.card-buy-btn {
+    background: linear-gradient(135deg, #1abc9c, #16a085);
+    color: white;
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.card-buy-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(26, 188, 156, 0.4);
+}
+
+.card-buy-btn:disabled {
+    background: #555;
+    color: #888;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+.player-hand-label {
+    font-size: 0.85rem;
+    color: #aaa;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    text-align: left;
+    width: 100%;
+}
+
+.player-hand {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+    min-height: 60px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+    padding: 8px;
+    align-items: flex-start;
+}
+
+.hand-empty {
+    color: #666;
+    font-style: italic;
+    font-size: 0.85rem;
+    margin: auto;
+}
+
+.hand-card-mini {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    border: 2px solid #4aa3df;
+    border-radius: 6px;
+    width: 45px;
+    height: 60px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    user-select: none;
+    position: relative;
+}
+
+.hand-card-mini:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 10px rgba(74, 163, 223, 0.4);
+    border-color: #60b4eb;
+}
+
+.hand-card-mini[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 115%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 15, 20, 0.95);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #4aa3df;
+    font-size: 0.8rem;
+    white-space: pre-wrap;
+    width: 200px;
+    z-index: 10000;
+    pointer-events: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+    text-align: center;
+    line-height: 1.3;
+}
+
+.card-back {
+    background: linear-gradient(135deg, #444, #222);
+    border: 2px solid #111;
+    width: 45px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+    cursor: default;
+}
+
+.card-back-icon {
+    font-size: 1.2rem;
+    color: #666;
+}
+
+.card-modal-content {
+    background: linear-gradient(to bottom, #1f2326, #141618);
+    border-color: #3498db;
+    text-align: center;
+    max-width: 320px;
+}
+
+.counter {
+    min-width: 280px;
+}
+
+/* =========================================
+   TIENDA GLOBAL (MODAL)
+   ========================================= */
+
+.shop-modal-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    justify-content: space-around;
+    align-items: flex-start;
+    padding: 10px;
+}
+
+#global-shop-modal .shop-title {
+    font-size: 1.1rem;
+    color: #e91e8c;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+#global-shop-modal #ship-shop-panel,
+#global-shop-modal #card-shop-panel {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    flex: 1;
+    min-width: 300px;
 }

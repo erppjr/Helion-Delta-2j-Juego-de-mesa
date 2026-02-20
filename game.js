@@ -78,6 +78,13 @@ function shipLabel(s) {
     return SHIP_TYPES.find(t => t.level === s.level) || { icon: '?', label: '?' };
 }
 
+function startBuyShip(level) {
+    if (!SHIP_TYPES.find(t => t.level === level)) return;
+    pendingShip = level;
+    if (typeof closeShopModal === 'function') closeShopModal();
+    showStatus(`Nave Nivel ${level} seleccionada. ¡Haz clic en tu base para colocarla!`);
+}
+
 // ── Render naves en SVG ───────────────────────
 
 function renderShips() {
@@ -930,4 +937,15 @@ function checkWinCondition() {
         return true;
     }
     return false;
+}
+
+
+// -- Tienda Modal ---------------------------------
+
+function openShopModal() {
+    document.getElementById('global-shop-modal').style.display = 'flex';
+}
+
+function closeShopModal() {
+    document.getElementById('global-shop-modal').style.display = 'none';
 }
