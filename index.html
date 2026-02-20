@@ -34,6 +34,7 @@
                 <button id="btn-clear" onclick="clearAll()" style="display:none;">🗑 Limpiar selección</button>
                 <button id="btn-debug-select" onclick="toggleDebugSelect()" style="display:none;">🌸 Selección
                     Rosa</button>
+                <button id="btn-debug-card" onclick="debugGiveCard()" style="display:none;">🃏 +1 Carta (Debug)</button>
                 <button id="btn-debug" onclick="toggleDebugMode()">🛠 Modo Debug</button>
                 <button id="btn-new-game" onclick="resetGame()" style="margin-left:auto; background:#c0392b;">🔥 Nueva
                     Partida</button>
@@ -86,7 +87,8 @@
 
     <!-- Modal Global de Tienda -->
     <div id="global-shop-modal" class="modal-backdrop" style="display:none; z-index:9000;">
-        <div class="modal-content shop-modal-content" style="max-width: 800px; width: 90%;">
+        <div class="modal-content shop-modal-content" style="max-width: 800px; width: 90%; position: relative;">
+            <button class="close-modal-btn" onclick="closeShopModal()">✖</button>
             <h2 class="battle-title" style="margin-bottom: 20px;">🛒 Tienda Galáctica</h2>
             <div class="shop-modal-grid">
                 <!-- Tienda de naves -->
@@ -101,8 +103,6 @@
                     <button id="btn-buy-card" class="card-buy-btn" onclick="buyCard()">🂠 Comprar carta — 3💰</button>
                 </div>
             </div>
-            <button class="modal-btn btn-cancel" style="margin-top: 25px; width: 100%;" onclick="closeShopModal()">✖
-                Cerrar Tienda</button>
         </div>
     </div>
 
@@ -149,6 +149,7 @@
                     <div id="battle-atk-str" class="battle-stat">Fuerza: 0</div>
                     <div id="battle-atk-dice" class="battle-dice fa-spin">🎲</div>
                     <div id="battle-atk-total" class="battle-total">Total: 0</div>
+                    <div id="battle-atk-cards" class="battle-cards-container"></div>
                 </div>
                 <div class="battle-vs">VS</div>
                 <div class="battle-side side-defender">
@@ -156,6 +157,7 @@
                     <div id="battle-def-str" class="battle-stat">Fuerza: 0</div>
                     <div id="battle-def-dice" class="battle-dice fa-spin">🎲</div>
                     <div id="battle-def-total" class="battle-total">Total: 0</div>
+                    <div id="battle-def-cards" class="battle-cards-container"></div>
                 </div>
             </div>
             <div id="battle-result" class="battle-result"></div>

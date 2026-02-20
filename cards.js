@@ -8,78 +8,54 @@
 // 'effect' es el identificador para la mecánica (TBD = por implementar)
 
 const CARD_DECK_DEF = [
-    {
-        id: 'c01',
-        name: '⚡ Impulso de Emergencia',
-        description: 'Una de tus naves puede moverse de nuevo este turno, aunque ya se haya movido.',
-        effect: 'extra_move',
-    },
-    {
-        id: 'c02',
-        name: '🛡 Escudo Deflector',
-        description: 'Añade +2 a tu valor de defensa en la próxima batalla en la que participes.',
-        effect: 'def_bonus',
-    },
-    {
-        id: 'c03',
-        name: '⚔️ Ataque Sorpresa',
-        description: 'Añade +3 a tu valor de ataque en la próxima batalla que inicies.',
-        effect: 'atk_bonus',
-    },
-    {
-        id: 'c04',
-        name: '💰 Contrabando',
-        description: 'Gana 4 monedas de inmediato.',
-        effect: 'gain_coins',
-    },
-    {
-        id: 'c05',
-        name: '🌌 Salto Cuántico',
-        description: 'Mueve una de tus naves a cualquier casilla del tablero, ignorando el rango de movimiento.',
-        effect: 'teleport',
-    },
-    {
-        id: 'c06',
-        name: '🔧 Reparación de Campo',
-        description: 'Recupera una nave destruida en la última batalla y colócala en tu zona de spawn.',
-        effect: 'revive_ship',
-    },
-    {
-        id: 'c07',
-        name: '📡 Interferencia',
-        description: 'El rival pierde su próximo turno de ingresos de planetas.',
-        effect: 'block_income',
-    },
-    {
-        id: 'c08',
-        name: '🚀 Propulsores Mejorados',
-        description: 'Todas tus naves tienen +1 de velocidad durante este turno.',
-        effect: 'speed_boost',
-    },
-    {
-        id: 'c09',
-        name: '🕵️ Reconocimiento',
-        description: 'Mira las 3 primeras cartas del mazo. Puedes descartarlas o dejarlas.',
-        effect: 'scout_deck',
-    },
-    {
-        id: 'c10',
-        name: '💣 Mina Espacial',
-        description: 'Coloca una mina en una casilla adyacente a una nave rival. La primera nave que pase pierde la batalla automáticamente.',
-        effect: 'mine',
-    },
-    {
-        id: 'c11',
-        name: '🌠 Nebulosa Protectora',
-        description: 'Durante este turno, tus naves no pueden ser atacadas por naves rivales.',
-        effect: 'invulnerable',
-    },
-    {
-        id: 'c12',
-        name: '🏴‍☠️ Saqueo',
-        description: 'Roba 2 monedas directamente del saldo rival.',
-        effect: 'steal_coins',
-    },
+    // 5 Cartas de +1 Movimiento
+    { id: 'm1_1', name: '🚀 Propulsores Ligeros', description: 'Otorga +1 casilla de movimiento a una de tus flotas este turno.', effect: { type: 'movement_boost', value: 1 } },
+    { id: 'm1_2', name: '🚀 Propulsores Ligeros', description: 'Otorga +1 casilla de movimiento a una de tus flotas este turno.', effect: { type: 'movement_boost', value: 1 } },
+    { id: 'm1_3', name: '🚀 Propulsores Ligeros', description: 'Otorga +1 casilla de movimiento a una de tus flotas este turno.', effect: { type: 'movement_boost', value: 1 } },
+    { id: 'm1_4', name: '🚀 Propulsores Ligeros', description: 'Otorga +1 casilla de movimiento a una de tus flotas este turno.', effect: { type: 'movement_boost', value: 1 } },
+    { id: 'm1_5', name: '🚀 Propulsores Ligeros', description: 'Otorga +1 casilla de movimiento a una de tus flotas este turno.', effect: { type: 'movement_boost', value: 1 } },
+
+    // 4 Cartas de +2 Movimiento
+    { id: 'm2_1', name: '☄ Motor Hiperespacial', description: 'Otorga +2 casillas de alcance a una de tus flotas. Cruza distancias más rápido.', effect: { type: 'movement_boost', value: 2 } },
+    { id: 'm2_2', name: '☄ Motor Hiperespacial', description: 'Otorga +2 casillas de alcance a una de tus flotas. Cruza distancias más rápido.', effect: { type: 'movement_boost', value: 2 } },
+    { id: 'm2_3', name: '☄ Motor Hiperespacial', description: 'Otorga +2 casillas de alcance a una de tus flotas. Cruza distancias más rápido.', effect: { type: 'movement_boost', value: 2 } },
+    { id: 'm2_4', name: '☄ Motor Hiperespacial', description: 'Otorga +2 casillas de alcance a una de tus flotas. Cruza distancias más rápido.', effect: { type: 'movement_boost', value: 2 } },
+
+    // 3 Cartas de +3 Movimiento
+    { id: 'm3_1', name: '🌌 Salto Cuántico', description: 'Realiza un salto enorme: Otorga +3 casillas extras a la capacidad de salto de una flota.', effect: { type: 'movement_boost', value: 3 } },
+    { id: 'm3_2', name: '🌌 Salto Cuántico', description: 'Realiza un salto enorme: Otorga +3 casillas extras a la capacidad de salto de una flota.', effect: { type: 'movement_boost', value: 3 } },
+    { id: 'm3_3', name: '🌌 Salto Cuántico', description: 'Realiza un salto enorme: Otorga +3 casillas extras a la capacidad de salto de una flota.', effect: { type: 'movement_boost', value: 3 } },
+
+    // ── Cartas de Fuerza (Batalla) ────────────────
+    // +1 Fuerza (6 copias)
+    { id: 'f1_1', name: '💥 Fuego de Cobertura', description: 'Apoyo táctico menor. Otorga +1 de Fuerza en una batalla.', effect: { type: 'combat_boost', value: 1 } },
+    { id: 'f1_2', name: '💥 Fuego de Cobertura', description: 'Apoyo táctico menor. Otorga +1 de Fuerza en una batalla.', effect: { type: 'combat_boost', value: 1 } },
+    { id: 'f1_3', name: '💥 Fuego de Cobertura', description: 'Apoyo táctico menor. Otorga +1 de Fuerza en una batalla.', effect: { type: 'combat_boost', value: 1 } },
+    { id: 'f1_4', name: '💥 Fuego de Cobertura', description: 'Apoyo táctico menor. Otorga +1 de Fuerza en una batalla.', effect: { type: 'combat_boost', value: 1 } },
+    { id: 'f1_5', name: '💥 Fuego de Cobertura', description: 'Apoyo táctico menor. Otorga +1 de Fuerza en una batalla.', effect: { type: 'combat_boost', value: 1 } },
+    { id: 'f1_6', name: '💥 Fuego de Cobertura', description: 'Apoyo táctico menor. Otorga +1 de Fuerza en una batalla.', effect: { type: 'combat_boost', value: 1 } },
+
+    // +2 Fuerza (5 copias)
+    { id: 'f2_1', name: '🛡️ Escudos Sobrecargados', description: 'Desvía los primeros disparos. Otorga +2 de Fuerza en una batalla.', effect: { type: 'combat_boost', value: 2 } },
+    { id: 'f2_2', name: '🛡️ Escudos Sobrecargados', description: 'Desvía los primeros disparos. Otorga +2 de Fuerza en una batalla.', effect: { type: 'combat_boost', value: 2 } },
+    { id: 'f2_3', name: '🛡️ Escudos Sobrecargados', description: 'Desvía los primeros disparos. Otorga +2 de Fuerza en una batalla.', effect: { type: 'combat_boost', value: 2 } },
+    { id: 'f2_4', name: '🛡️ Escudos Sobrecargados', description: 'Desvía los primeros disparos. Otorga +2 de Fuerza en una batalla.', effect: { type: 'combat_boost', value: 2 } },
+    { id: 'f2_5', name: '🛡️ Escudos Sobrecargados', description: 'Desvía los primeros disparos. Otorga +2 de Fuerza en una batalla.', effect: { type: 'combat_boost', value: 2 } },
+
+    // +3 Fuerza (4 copias)
+    { id: 'f3_1', name: '🎯 Misiles Perforantes', description: 'Impacto directo en el casco enemigo. Otorga +3 de Fuerza en una batalla.', effect: { type: 'combat_boost', value: 3 } },
+    { id: 'f3_2', name: '🎯 Misiles Perforantes', description: 'Impacto directo en el casco enemigo. Otorga +3 de Fuerza en una batalla.', effect: { type: 'combat_boost', value: 3 } },
+    { id: 'f3_3', name: '🎯 Misiles Perforantes', description: 'Impacto directo en el casco enemigo. Otorga +3 de Fuerza en una batalla.', effect: { type: 'combat_boost', value: 3 } },
+    { id: 'f3_4', name: '🎯 Misiles Perforantes', description: 'Impacto directo en el casco enemigo. Otorga +3 de Fuerza en una batalla.', effect: { type: 'combat_boost', value: 3 } },
+
+    // +4 Fuerza (3 copias)
+    { id: 'f4_1', name: '⚡ Rayo de Iones', description: 'Desactiva los escudos y daña la nave crítica. Otorga +4 de Fuerza en una batalla.', effect: { type: 'combat_boost', value: 4 } },
+    { id: 'f4_2', name: '⚡ Rayo de Iones', description: 'Desactiva los escudos y daña la nave crítica. Otorga +4 de Fuerza en una batalla.', effect: { type: 'combat_boost', value: 4 } },
+    { id: 'f4_3', name: '⚡ Rayo de Iones', description: 'Desactiva los escudos y daña la nave crítica. Otorga +4 de Fuerza en una batalla.', effect: { type: 'combat_boost', value: 4 } },
+
+    // +5 Fuerza (2 copias)
+    { id: 'f5_1', name: '☢️ Prototipo de Fusión', description: 'Arma secreta devastadora de un solo uso. Otorga +5 de Fuerza en una batalla.', effect: { type: 'combat_boost', value: 5 } },
+    { id: 'f5_2', name: '☢️ Prototipo de Fusión', description: 'Arma secreta devastadora de un solo uso. Otorga +5 de Fuerza en una batalla.', effect: { type: 'combat_boost', value: 5 } },
 ];
 
 // ── Estado en partida ─────────────────────────
@@ -88,6 +64,8 @@ let cardDeck = [];   // ids barajados pendientes de ser comprados
 let cardDiscard = [];   // ids de cartas vendidas/usadas
 const playerHands = { red: [], green: [] };
 // playerHands[player] = array de objetos carta (copias de CARD_DECK_DEF)
+
+let activeCardEffect = null; // { ...cardDef, owner: 'red'|'green' }
 
 const CARD_BUY_COST = 3;
 const CARD_SELL_VALUE = 1;
@@ -193,15 +171,39 @@ function sellCard(player, cardId) {
     saveGame();
 }
 
-// ── Jugar carta (stub) ────────────────────────
+// ── Uso de cartas (Play) ──────────────────────
 
 function playCard(player, cardId) {
     if (player !== currentPlayer) return;
+    if (activeCardEffect) {
+        showStatus('⚠️ Ya tienes una carta activa. Úsala o cancélala antes de jugar otra.');
+        return;
+    }
+
     const hand = playerHands[player];
-    const card = hand.find(c => c.id === cardId);
-    if (!card) return;
-    // TODO: implementar efectos individuales según card.effect
-    showStatus(`[WIP] Efecto de "${card.name}" aún no implementado.`);
+    const idx = hand.findIndex(c => c.id === cardId);
+    if (idx === -1) return;
+
+    // Quitar la carta de la mano y activar efecto
+    const [card] = hand.splice(idx, 1);
+    activeCardEffect = { ...card, owner: player };
+
+    // Mostrar mensaje con botón para cancelar la carta
+    showStatus(`✨ Carta "${card.name}" ACTIVADA. Selecciona una flota para moverla con alcance ampliado. <button class="move-cancel-btn" style="padding:4px 8px; margin-left:10px" onclick="cancelCardEffect()">✖ Cancelar Carta</button>`, true);
+
+    renderCardArea();
+}
+
+function cancelCardEffect() {
+    if (!activeCardEffect) return;
+    const player = activeCardEffect.owner;
+
+    // Devolver a la mano
+    playerHands[player].push(activeCardEffect);
+    showStatus(`✖ Carta "${activeCardEffect.name}" cancelada y devuelta a tu mano.`);
+
+    activeCardEffect = null;
+    renderCardArea();
 }
 
 // ── Render ────────────────────────────────────
@@ -307,7 +309,7 @@ function closeCardModal() {
     document.getElementById('card-modal').style.display = 'none';
 }
 
-// ── Persistencia ──────────────────────────────
+// ── Persistencia extendida ──────────────────
 
 function saveCards() {
     return {
@@ -317,6 +319,7 @@ function saveCards() {
             red: playerHands.red.map(c => c.id),
             green: playerHands.green.map(c => c.id),
         },
+        activeCardEffect: activeCardEffect ? activeCardEffect.id : null // Guardamos id si hubo F5 a mitad
     };
 }
 
@@ -326,5 +329,14 @@ function loadCards(state) {
     cardDiscard = state.cardDiscard || [];
     playerHands.red = (state.playerHands?.red || []).map(id => ({ ...findCardDef(id) })).filter(c => c.id);
     playerHands.green = (state.playerHands?.green || []).map(id => ({ ...findCardDef(id) })).filter(c => c.id);
+
+    if (state.activeCardEffect) {
+        // En vez de cargarlo activo y romper un posible "moveState" a medias, devuélvelo a la mano
+        const def = findCardDef(state.activeCardEffect);
+        if (def) {
+            playerHands[currentPlayer].push({ ...def });
+        }
+    }
+    activeCardEffect = null;
     renderCardArea();
 }

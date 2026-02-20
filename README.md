@@ -1,60 +1,76 @@
-# 🚀 Helion Delta – Juego de Mesa 
+# Helion Delta 🚀
 
-**Helion Delta** es un juego de estrategia por turnos para 2 jugadores ambientado en el espacio, jugado sobre un tablero hexagonal.
-
-> ⚠️ **Este proyecto no está acabado.** Lo que ves aquí es la **base jugable** del juego, con las mecánicas fundamentales implementadas. Se seguirá desarrollando.
+Un juego de estrategia sci-fi por turnos para dos jugadores en navegador (Rojo vs Verde), donde los almirantes comandan flotas, conquistan planetas y emplean astucia para exterminar a la flota rival en una galaxia con cuadrícula hexagonal.
 
 ---
 
-## 🎮 Mecánicas implementadas
+## ⚙️ MECÁNICAS BÁSICAS DE JUEGO
 
-| Mecánica | Descripción |
-|---|---|
-| **Tablero Hex** | Mapa hexagonal con casillas de colores y zonas configurables |
-| **Naves** | 4 tipos de nave con costes, velocidad y fuerza distintos |
-| **Cartas** | Sistema de cartas de habilidad que se pueden comprar en tienda secreta, vender o usar. |
-| **Movimiento** | Movimiento por BFS con rango variable (1-2 casillas según nave) |
-| **Flotas** | Agrupación de naves; velocidad limitada por la nave más lenta |
-| **Planetas** | Generan ingresos por turno; propiedad dinámica según presencia |
-| **Batallas** | Combate por dados (Fuerza + D6 vs Fuerza + D6). Otorga carta gratis al ganador. |
-| **Condición de victoria** | Conquistar la base enemiga |
-| **Persistencia** | Guardado automático en localStorage |
+### 1. El Tablero y los Planetas 🪐
+La partida se disputa en un extenso entramado hexagonal que funciona tanto de campo de movimiento libre como de zonas de recursos.
+Existen tres tipos de planetas conquistables:
+- **Planetas Base (Hogar):** Generan 1 moneda / turno. Tu posición de inicio segura (roja o verde).
+- **Planetas Terrestres (Normales/Puntos azules):** Esparcidos a los lados y en los bordes. Generan 1 moneda / turno.
+- **Planeta Central (Rich):** Ubicado exactamente en el medio `[5, 5]`. Es el principal punto de disputa y genera **2 monedas / turno**.
 
-## 🛠 Tecnologías
+### 2. Tienda Modular y Economía 💰
+Al lado de la interfaz, cada jugador posee su Contador de Monedas (que aumenta automáticamente en cada `Finalizar Turno` acorde con el número de planetas poseídos). 
+Utilizando su riqueza, pueden abrir el Modal de la Tienda de juego e invertir recursos para reforzar su flota.
+El máximo teórico de aglomeración en un mismo hexágono es de **5 naves por bando**. 
+*Naves Disponibles:*
+- Nave Ligera (I) - 3 Monedas - Velocidad 2 - Fuerza 2
+- Crucero (II) - 6 Monedas - Velocidad 2 - Fuerza 4
+- Acorazado (III) - 15 Monedas - Velocidad 1 - Fuerza 6
+- Titán (IV) - 20 Monedas - Velocidad 1 - Fuerza 8
 
-- HTML5 / CSS3 / JavaScript vanilla
-- SVG para el renderizado del tablero
-- Sin dependencias externas
-
-## ▶️ Cómo jugar
-
-1. Abre `index.html` en cualquier navegador moderno.
-2. Jugador **Rojo** empieza. 
-3. Abre la **Tienda** pulsando en el botón correspondiente en la barra lateral.
-4. Compra naves y colócalas en tus casillas de inicio, u obtén cartas de habilidad.
-5. Mueve tus naves por el tablero, conquista planetas y ataca al enemigo.
-6. **Gana** el jugador que logre colocar una nave en la base enemiga.
-
-## 📁 Estructura
-
-```
-├── index.html    → Estructura HTML y modales
-├── style.css     → Estilos del tablero, paneles y modales
-├── board.js      → Generación y renderizado del tablero hexagonal
-├── cards.js      → Sistema de mazo, manos y tienda de cartas
-├── game.js       → Lógica principal del juego (turnos, combate, movimiento)
-└── README.md
-```
-
-## 📋 Por hacer
-
-- [ ] Más tipos de planetas y eventos
-- [ ] Implementar efectos reales de cada carta en la mecánica de juego
-- [ ] IA para jugar contra la máquina
-- [ ] Modo multijugador online
-- [ ] Efectos de sonido y animaciones
-
+Las naves que desees comprar deben ser ubicadas exclusivamente en tus casillas iniciales "Base" que se iluminarán del color de influencia amarilla.
 
 ---
 
-*Proyecto en desarrollo activo.*
+## 🗺️ MOVIMIENTO Y DISTANCIAS
+
+La agilidad general de una flota viene determinada por "el eslabón más débil".
+Si mezclas Naves Ligeras (Vel 2) con Titanes (Vel 1) e intentas moverlas en grupo como escuadrón, la flota conjunta poseerá alcance 1 (ya que las naves pesadas ralentizan a las rápidas). Siempre tienes la opción en el Panel de Movimiento de dividir naves del hexágono escogiendo específicamente a cuáles mover.
+- **Lógica Anti-abusos:** Las naves que hayan saltado recientemente su distancia base entran en estado (ya movida) y no podrán volver a liderar acciones de ruta en el mismo turno por agotamiento lógico de motores.
+
+---
+
+## ⚔️ SISTEMA DE COMBATE
+
+El jugador activo puede lanzar a los escuadrones perimetrales para invadir un sector donde haya fuerzas enemigas. El juego iluminará los posibles escuadrones tácticos y abrirá un **enfrentamiento**.
+- **Fuerza Base:** Ambos bandos suman los atributos de `Fuerza` nativa de las naves participantes. Esa será la estadística de armadura/puntería inicial de combate de cada uno.
+- **Factor Caos (Cálculo D6):** El Modal de Batalla girará dos dados estándar (`D6` o un dado del 1 al 6) para sumar sus resultados fijos al poder del "Atacante y "Defensor". Quién obtenga un total mayor gana la escaramuza. Gana el Total más alto. La flota perdedora (incluidas todas sus naves apiladas allí) es eliminada del mapa por completo.
+
+### 🎲 Milagros Desesperados (Fuga de Supervivencia)
+Incluso con la completa destrucción de tus fuerzas, hay una ínfima esperanza en el vacío inter-estelar. 
+Cuando una flota falla su defensa y se procede a su ejecución, cuenta internamente con una **probabilidad interna del 100% (6/6 garantizado)** de evacuar los restos de la nave principal a las coordenadas vecinas antes del golpe final.
+Si ocurre el milagro:
+- El juego salvará con vida a **una (1) nave aleatoria** proveniente de tu flota destruida.
+- Esa nave salvadora entrará en Fase Especial de Alerta para tu mano. Todo se detiene y estás forzado a escoger en un rango de escape de 2 Hexágonos una casilla refugio vacía o aliada. 
+- La nave reaparecerá a salvo ahí (aunque extenuada y sin poder actuar el resto del turno).
+
+---
+
+## 🃏 EL MAZO: CARTAS DE COMANDANTE Y ENGAÑOS
+Más allá del combate plano o la pura moneda, Helion Delta cuenta con un Sistema de Robo de Cartas que dictaminan habilidades de un solo uso que desbalancean la galaxia. Su precio son 4 Monedas, y cada jugador tiene Límite de **6 Cartas Máximo** en mano.
+
+**A. Cartas Tácticas de Movimiento Extra:** 
+Te permiten potenciar los saltos naturales de avance de las naves en juego. Puedes inyectárselo a flotas descansadas o flotas que ya se hallan movido (exclusivamente avanzan la distancia del bonus). Tienen limitante estricto, provocando el estado `<Impulsada>` la primera vez que tocan una nave e impidiendo que una flota spammee múltiples cartas de movimiento encadenadas infinitamente en el turno.
+- *Propulsores Ligeros (+1 Mov. | 5 Existencias)*
+- *Motor Hiperespacial (+2 Mov. | 4 Existencias)*
+- *Salto Cuántico (+3 Mov. | 3 Existencias)*
+
+**B. Cartas Tácticas de Interrupción Militar (Fuerza Extra):** 
+Cartas que permanecen escondidas en las manos de los jugadores (inactivas a no ser que entres en choque bélico con el del frente). Si ocurre el Modal de Batalla, aquellos afortunados que posean en inventario este pool de apoyo podrán hacer clics rápidos consumiendo las existencias desde sus manos e introduciendo el Modificador Final al marcador numérico base que determinará la explosión o no del contrincante.
+- *Fuego de Cobertura (+1 Fuerza combate | 6 Existencias)*
+- *Escudos Sobrecargados (+2 Fuerza | 5 Existencias)*
+- *Misiles Perforantes (+3 Fuerza | 4 Existencias)*
+- *Rayo de Iones (+4 Fuerza | 3 Existencias)*
+- *Prototipo de Fusión (+5 Fuerza Masiva | 2 Existencias)*
+
+---
+
+### MODO DEBUG (Desarrollador)
+La caja de herramientas integrada en el Panel Izquierdo te facilita probar la integridad de las implementaciones:
+- Colocas naves instantáneas a todas sus formas con solo usar el "Modo Rosa" (Debug Selection), y usar `btn-debug` elimina las restricciones de zonas de despliegue amarillas.
+- Puedes inyectarte tanto Oro Ilimitado como obligar al sistema de manos a darte Cartas Tácticas del Pool Aleatorio del mazo con tan solo pulsar su botón en cada turno para observar batallas completas y efectos en dos o tres clicks simulando finales de partida reales de 2h de partida.

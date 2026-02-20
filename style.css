@@ -679,6 +679,25 @@ footer kbd {
     border-color: #ff6b6b;
 }
 
+/* ── Cross Button ── */
+.close-modal-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: transparent;
+    border: none;
+    color: #888;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color 0.2s, transform 0.2s;
+    padding: 5px;
+}
+
+.close-modal-btn:hover {
+    color: #ff6b6b;
+    transform: scale(1.2);
+}
+
 /* ── Status bar ── */
 .game-status {
     font-size: 0.82rem;
@@ -1121,4 +1140,44 @@ footer kbd {
     padding: 20px;
     flex: 1;
     min-width: 300px;
+}
+
+/* ── Cartas rápidas en Batalla ── */
+.battle-cards-container {
+    margin-top: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+.battle-card-btn {
+    background: rgba(231, 76, 60, 0.85);
+    /* Rojo Atacante base */
+    border: 1px solid #c0392b;
+    border-radius: 6px;
+    color: white;
+    padding: 6px 12px;
+    font-size: 0.95rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+    line-height: 1.2;
+}
+
+.battle-card-btn:hover {
+    transform: scale(1.08);
+    background: #e74c3c;
+    box-shadow: 0 0 10px rgba(231, 76, 60, 0.6);
+}
+
+.battle-card-btn.def {
+    background: rgba(39, 174, 96, 0.85);
+    /* Verde Defensor base */
+    border-color: #2ecc71;
+}
+
+.battle-card-btn.def:hover {
+    background: #2ecc71;
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.6);
 }

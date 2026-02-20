@@ -53,6 +53,7 @@ const ships = {};
 let pendingShip = null;   // nave recién comprada esperando colocación
 let moveState = null;   // { fromKey, selectedIndices: Set, step: 'pick'|'dest', reachable: Set }
 let battleState = null;   // { fromKey, enemies: [key], step: 'select_target' | 'rolling' }
+let escapeState = null;   // { player, shipToSave, validDestinations: Set }
 
 // ── Helpers ───────────────────────────────────
 
@@ -229,10 +230,15 @@ function updateTurnPanel() {
 }
 
 function endTurn() {
+    // Si se quedó alguna carta colgando, la cerramos
+    if (typeof activeCardEffect !== 'undefined' && activeCardEffect && typeof cancelCardEffect === 'function') {
+        cancelCardEffect();
+    }
+
     // Reset moved flags
     for (const key of Object.keys(ships)) {
-        ships[key].red.forEach(s => s.moved = false);
-        ships[key].green.forEach(s => s.moved = false);
+        ships[key].red.forEach(s => { s.moved = false; s.boosted = false; });
+        ships[key].green.forEach(s => { s.moved = false; s.boosted = false; });
     }
     pendingShip = null;
     moveState = null;
@@ -249,6 +255,7 @@ function endTurn() {
     collectPlanetIncome();
 
     updateTurnPanel();
+    if (typeof renderCardArea === 'function') renderCardArea();
     saveGame();
 }
 
@@ -416,18 +423,29 @@ function startBuyShip(ship) {
     pendingShip = ship;
     highlightCells(SPAWN_CELLS[currentPlayer], 'cell-highlight-spawn');
     showStatus(`Elige una casilla de inicio para colocar ${ship.label} (💰 ${ship.cost})`);
+
+    // Cerramos el modal de tienda automáticamente para comodidad del jugador
+    if (typeof closeShopModal === 'function') closeShopModal();
 }
 
 function placePurchasedShip(key) {
     if (!pendingShip) return false;
-    if (!SPAWN_CELLS[currentPlayer].includes(key)) {
-        showStatus('Esa casilla no es zona de inicio. Elige una casilla resaltada.');
+
+    // Regla normal de colocación (Solo en debug se permite colocar en cualquier parte)
+    if (!debugMode && !SPAWN_CELLS[currentPlayer].includes(key)) {
+        showStatus('❌ Compra cancelada (Casilla fuera de base).');
+        pendingShip = null;
+        clearHighlights('cell-highlight-spawn');
         return true;
     }
+
     if (totalShipsAt(key) >= MAX_SHIPS_PER_CELL) {
-        showStatus('¡Casilla llena! Máximo 5 naves.');
+        showStatus('❌ Compra cancelada (Casilla llena, máximo 5 naves).');
+        pendingShip = null;
+        clearHighlights('cell-highlight-spawn');
         return true;
     }
+
     addCoins(currentPlayer, -pendingShip.cost);
     getShipsAt(key)[currentPlayer].push({ level: pendingShip.level, moved: false });
     clearHighlights('cell-highlight-spawn');
@@ -437,6 +455,8 @@ function placePurchasedShip(key) {
     renderShopButtons();
     saveGame();
     showStatus('✅ Nave colocada.');
+
+    if (typeof closeShopModal === 'function') closeShopModal();
     return true;
 }
 
@@ -446,9 +466,11 @@ function startMove(key) {
     const myShips = getShipsAt(key)[currentPlayer];
     if (myShips.length === 0) return false;
 
-    const movable = myShips.filter(s => !s.moved);
+    const isBoostActive = (typeof activeCardEffect !== 'undefined' && activeCardEffect && activeCardEffect.effect && activeCardEffect.effect.type === 'movement_boost');
+
+    const movable = myShips.filter(s => !s.boosted && (!s.moved || isBoostActive));
     if (movable.length === 0) {
-        showStatus('Todas las naves de esta casilla ya se movieron este turno.');
+        showStatus('Las naves de esta casilla ya no pueden moverse ni recibir más impulsos.');
         return true;
     }
 
@@ -461,14 +483,14 @@ function startMove(key) {
     if (srcCell) srcCell.classList.add('cell-selected');
 
     // Auto-seleccionar todas las naves movibles
-    const allIndices = myShips.map((s, i) => (!s.moved ? i : -1)).filter(i => i >= 0);
+    const allIndices = myShips.map((s, i) => (!s.boosted && (!s.moved || isBoostActive) ? i : -1)).filter(i => i >= 0);
     applyMoveDestination(allIndices);
 
     // Si hay más de 1 nave movible, mostrar botón "Dividir"
     if (movable.length > 1) {
         const panel = document.getElementById('move-panel');
         panel.innerHTML = `
-          <button class="move-count-btn" onclick="openSplitModal()">✂️ Dividir flota</button>
+          <button class="ship-buy-btn" style="width: auto; padding: 8px 16px; margin-bottom: 5px; flex-direction: row; min-height: 36px; white-space: nowrap;" onclick="openSplitModal()">✂️ Dividir flota</button>
           <button class="move-cancel-btn" onclick="cancelMove()">Cancelar</button>
         `;
         panel.style.display = 'flex';
@@ -489,11 +511,14 @@ function openSplitModal() {
 
 
 function showPickModal(key, myShips) {
+    const isBoostActive = (typeof activeCardEffect !== 'undefined' && activeCardEffect && activeCardEffect.effect && activeCardEffect.effect.type === 'movement_boost');
+
     let rows = myShips.map((s, i) => {
         const t = shipLabel(s);
-        const disabled = s.moved ? 'disabled' : '';
-        const movedTag = s.moved ? '<span class="tt-moved">ya movida</span>' : '';
-        return `<label class="ship-pick-row ${s.moved ? 'ship-moved' : ''}">
+        const disabled = (s.boosted || (s.moved && !isBoostActive)) ? 'disabled' : '';
+        const movedTag = s.boosted ? '<span class="tt-moved" style="color:#3498db;">impulsada</span>' :
+            s.moved ? '<span class="tt-moved">ya movida</span>' : '';
+        return `<label class="ship-pick-row ${(s.boosted || (s.moved && !isBoostActive)) ? 'ship-moved' : ''}">
       <input type="checkbox" class="ship-pick-cb" data-idx="${i}" ${disabled} onchange="onPickChange()">
       <span>${t.icon} ${t.label} ${movedTag}</span>
     </label>`;
@@ -547,9 +572,20 @@ function getFleetSpeed(shipIndices, fromKey) {
     shipIndices.forEach(idx => {
         const ship = myShips[idx];
         const type = SHIP_TYPES.find(t => t.level === ship.level);
-        if (type && type.speed < minSpeed) minSpeed = type.speed;
+        // Si la nave ya se había movido, su velocidad base será 0 (solo la moverá la carta)
+        const currentSpeed = ship.moved ? 0 : (type ? type.speed : 0);
+
+        if (currentSpeed < minSpeed) minSpeed = currentSpeed;
     });
-    return minSpeed === 999 ? 1 : minSpeed;
+
+    let speed = minSpeed === 999 ? 1 : minSpeed;
+
+    // Si hay una carta de mejora de movimiento activa, sumamos su valor
+    if (typeof activeCardEffect !== 'undefined' && activeCardEffect && activeCardEffect.effect && activeCardEffect.effect.type === 'movement_boost') {
+        speed += activeCardEffect.effect.value;
+    }
+
+    return speed;
 }
 
 function calculateReachableCells(startKey, range) {
@@ -631,9 +667,11 @@ function executeMove(destKey) {
     // Quitar del origen (de mayor índice a menor)
     indices.slice(0, freeSlots).sort((a, b) => b - a).forEach(i => myShips.splice(i, 1));
 
-    // Añadir al destino marcadas como ya movidas
+    const isBoostActive = (typeof activeCardEffect !== 'undefined' && activeCardEffect && activeCardEffect.effect && activeCardEffect.effect.type === 'movement_boost');
+
+    // Añadir al destino marcadas como ya movidas y/o impulsadas
     const dest = getShipsAt(destKey)[currentPlayer];
-    toMove.forEach(s => dest.push({ level: s.level, moved: true }));
+    toMove.forEach(s => dest.push({ level: s.level, moved: true, boosted: isBoostActive ? true : (s.boosted || false) }));
 
     clearHighlights('cell-highlight-move');
     clearHighlights('cell-selected');
@@ -641,10 +679,20 @@ function executeMove(destKey) {
     const panel = document.getElementById('move-panel');
     if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
 
+    // Consumir carta de movimiento activa
+    if (typeof activeCardEffect !== 'undefined' && activeCardEffect && activeCardEffect.effect && activeCardEffect.effect.type === 'movement_boost') {
+        if (typeof cardDiscard !== 'undefined') cardDiscard.push(activeCardEffect.id);
+        const cardName = activeCardEffect.name;
+        activeCardEffect = null;
+        showStatus(`✅ ${toMove.length} nave(s) movidas a (${destKey}). ☄ Carta consumida: ${cardName}.`);
+        if (typeof renderCardArea === 'function') renderCardArea();
+    } else {
+        showStatus(`✅ ${toMove.length} nave(s) movidas a (${destKey}).`);
+    }
+
     renderShips();
     updatePlanetOwnership();
     saveGame();
-    showStatus(`✅ ${toMove.length} nave(s) movidas a (${destKey}).`);
 
     // Detectar enemigos adyacentes para batalla
     checkForBattle(destKey);
@@ -708,6 +756,12 @@ function cancelMove() {
     clearHighlights('cell-highlight-move');
     clearHighlights('cell-highlight-spawn');
     clearHighlights('cell-selected');
+
+    // Si cancela, devolvemos la carta active a la mano a menos que se trate del turno del rival
+    if (typeof activeCardEffect !== 'undefined' && activeCardEffect && typeof cancelCardEffect === 'function' && activeCardEffect.owner === currentPlayer) {
+        cancelCardEffect();
+    }
+
     const modal = document.getElementById('move-modal');
     if (modal) { modal.style.display = 'none'; modal.innerHTML = ''; }
     const panel = document.getElementById('move-panel');
@@ -717,23 +771,64 @@ function cancelMove() {
 
 // ── Status ────────────────────────────────────
 
-function showStatus(msg) {
+function showStatus(msg, isHTML = false) {
     const el = document.getElementById('game-status');
-    if (el) el.textContent = msg;
+    if (!el) return;
+    if (isHTML) {
+        el.innerHTML = msg;
+    } else {
+        el.textContent = msg;
+    }
 }
 
 // ── Click handler ─────────────────────────────
 
 let debugMode = false;
+let debugSelectMode = false;
+
+function toggleDebugSelect() {
+    debugSelectMode = !debugSelectMode;
+    const btn = document.getElementById('btn-debug-select');
+    if (debugSelectMode) {
+        btn.classList.add('debug-active');
+        showStatus('🌸 Selección Rosa activada');
+    } else {
+        btn.classList.remove('debug-active');
+        showStatus('🌸 Selección Rosa desactivada');
+        // Limpiar selección rosa al salir
+        document.querySelectorAll('.hex-cell.selected').forEach(el => {
+            el.classList.remove('selected');
+            const key = `${el.dataset.q},${el.dataset.r}`;
+            const fc = getFixedClass(key);
+            if (fc) el.classList.add(fc);
+        });
+    }
+}
 
 function toggleDebugMode() {
     debugMode = !debugMode;
     const btn = document.getElementById('btn-debug');
+
+    // Botones adicionales de debug
+    const tools = [
+        document.getElementById('btn-export'),
+        document.getElementById('btn-clear'),
+        document.getElementById('btn-debug-select'),
+        document.getElementById('btn-debug-card')
+    ];
+
+    // Botones de monedas
+    const coinBtns = document.querySelectorAll('.coin-btn');
+
     if (debugMode) {
         btn.textContent = '🔴 Salir de Debug';
         btn.classList.add('debug-active');
         cancelMove();
-        showStatus('🛠 Modo debug: haz clic en casillas para seleccionarlas en rosa.');
+        showStatus('🛠 Modo debug: colocación infinita, casillas rosas, monedas y cartas gratis.');
+
+        tools.forEach(t => t && (t.style.display = 'inline-block'));
+        coinBtns.forEach(b => b.style.display = 'inline-block');
+
     } else {
         btn.textContent = '🛠 Modo Debug';
         btn.classList.remove('debug-active');
@@ -745,12 +840,61 @@ function toggleDebugMode() {
             if (fc) el.classList.add(fc);
         });
         showStatus('');
+
+        tools.forEach(t => t && (t.style.display = 'none'));
+        coinBtns.forEach(b => b.style.display = 'none');
     }
 }
 
+function debugGiveCard() {
+    if (!debugMode) return;
+
+    if (typeof playerHands === 'undefined' || typeof CARD_DECK_DEF === 'undefined') {
+        showStatus('❌ Sistema de cartas no disponible.');
+        return;
+    }
+
+    const hand = playerHands[currentPlayer];
+    if (hand.length >= 6) {
+        showStatus('⚠️ Mano llena (6 cartas max). Borra o usa una antes.');
+        return;
+    }
+
+    // Damos una carta aleatoria del deck de test
+    const randomCard = CARD_DECK_DEF[Math.floor(Math.random() * CARD_DECK_DEF.length)];
+    hand.push({ ...randomCard });
+
+    if (typeof renderCardArea === 'function') renderCardArea();
+    showStatus(`🃏 Añadida carta de debug: ${randomCard.name}`);
+}
+
 function onGameCellClick(key) {
+    // Modo selección de escape activo
+    if (escapeState) {
+        if (!escapeState.validDestinations.has(key)) {
+            showStatus('Debes huir a una de las casillas resaltadas en azul.');
+            return;
+        }
+        if (totalShipsAt(key) >= MAX_SHIPS_PER_CELL) {
+            showStatus('Casilla llena. Elige otra.');
+            return;
+        }
+
+        // Ejecutar fuga
+        const dest = getShipsAt(key)[escapeState.player];
+        dest.push({ level: escapeState.shipToSave.level, moved: true, boosted: true });
+
+        clearHighlights('cell-highlight-move');
+        escapeState = null;
+        renderShips();
+        updatePlanetOwnership();
+        saveGame();
+        showStatus('Nave salvada con éxito. Continúa el juego.');
+        return;
+    }
+
     // Modo debug: toggle rosa
-    if (debugMode) {
+    if (debugSelectMode) {
         const [q, r] = key.split(',');
         const cell = document.querySelector(`.hex-cell[data-q="${q}"][data-r="${r}"]`);
         if (!cell) return;
@@ -789,7 +933,15 @@ function onGameCellClick(key) {
         return;
     }
     // 5. Iniciar selección de naves en casilla
-    startMove(key);
+    const moveStarted = startMove(key);
+
+    // Si intentaste jugar una carta pero clickaste en el vacío o naves sin permiso, 
+    // abortamos y te devolvemos la carta a la mano.
+    if (!moveStarted && typeof activeCardEffect !== 'undefined' && activeCardEffect) {
+        if (typeof cancelCardEffect === 'function') {
+            cancelCardEffect();
+        }
+    }
 }
 
 // ── Battle System ─────────────────────────────
@@ -810,13 +962,16 @@ function startBattle(atkKey, defKey) {
 
     battleState.atkStrBase = atkStr;
     battleState.defStrBase = defStr;
+    battleState.atkStrBoost = 0;
+    battleState.defStrBoost = 0;
 
     // Abrir Modal
     const modal = document.getElementById('battle-modal');
     modal.style.display = 'flex';
 
-    document.getElementById('battle-atk-str').textContent = `Fuerza: ${atkStr}`;
-    document.getElementById('battle-def-str').textContent = `Fuerza: ${defStr}`;
+    updateBattleUI();
+    renderBattleCards();
+
     document.getElementById('battle-atk-total').textContent = 'Total: ?';
     document.getElementById('battle-def-total').textContent = 'Total: ?';
     document.getElementById('battle-result').textContent = '¡Tira los dados!';
@@ -824,6 +979,71 @@ function startBattle(atkKey, defKey) {
 
     document.getElementById('btn-roll-dice').style.display = 'inline-block';
     document.getElementById('btn-close-battle').style.display = 'none';
+    document.getElementById('btn-roll-dice').disabled = false;
+}
+
+function updateBattleUI() {
+    const finalAtk = battleState.atkStrBase + battleState.atkStrBoost;
+    const finalDef = battleState.defStrBase + battleState.defStrBoost;
+    document.getElementById('battle-atk-str').textContent = `Fuerza: ${finalAtk}`;
+    document.getElementById('battle-def-str').textContent = `Fuerza: ${finalDef}`;
+}
+
+function renderBattleCards() {
+    const atkContainer = document.getElementById('battle-atk-cards');
+    const defContainer = document.getElementById('battle-def-cards');
+    if (!atkContainer || !defContainer) return;
+
+    atkContainer.innerHTML = '';
+    defContainer.innerHTML = '';
+
+    const enemy = currentPlayer === 'red' ? 'green' : 'red';
+
+    // Rellenamos cartas del atacante
+    const atkHand = playerHands[currentPlayer] || [];
+    atkHand.forEach((card, idx) => {
+        if (card.effect && card.effect.type === 'combat_boost') {
+            const btn = document.createElement('button');
+            btn.className = 'battle-card-btn';
+            btn.innerHTML = `+${card.effect.value} F<br><span style="font-size:0.6rem; font-weight:normal;">${card.name}</span>`;
+            btn.onclick = () => playCombatCard('atk', idx, card);
+            atkContainer.appendChild(btn);
+        }
+    });
+
+    // Rellenamos cartas del defensor
+    const defHand = playerHands[enemy] || [];
+    defHand.forEach((card, idx) => {
+        if (card.effect && card.effect.type === 'combat_boost') {
+            const btn = document.createElement('button');
+            btn.className = 'battle-card-btn def';
+            btn.innerHTML = `+${card.effect.value} F<br><span style="font-size:0.6rem; font-weight:normal;">${card.name}</span>`;
+            btn.onclick = () => playCombatCard('def', idx, card);
+            defContainer.appendChild(btn);
+        }
+    });
+}
+
+function playCombatCard(side, cardIdx, card) {
+    const isAtk = side === 'atk';
+    const player = isAtk ? currentPlayer : (currentPlayer === 'red' ? 'green' : 'red');
+
+    // Quitar la carta de la mano del usuario y lanzarla al descarte general
+    playerHands[player].splice(cardIdx, 1);
+    if (typeof cardDiscard !== 'undefined') {
+        cardDiscard.push(card);
+    }
+
+    // Aplicar los puntos de Fuerza extra a la batalla
+    if (isAtk) {
+        battleState.atkStrBoost += card.effect.value;
+    } else {
+        battleState.defStrBoost += card.effect.value;
+    }
+
+    updateBattleUI();
+    renderBattleCards();
+    if (typeof renderCardArea === 'function') renderCardArea(); // Actualiza inventario de interfaz
 }
 
 function calculateFleetStrength(shipsList) {
@@ -860,8 +1080,8 @@ function finalizeBattle() {
     document.getElementById('battle-atk-dice').textContent = getDiceIcon(dAtk);
     document.getElementById('battle-def-dice').textContent = getDiceIcon(dDef);
 
-    const atkTotal = battleState.atkStrBase + dAtk;
-    const defTotal = battleState.defStrBase + dDef;
+    const atkTotal = battleState.atkStrBase + battleState.atkStrBoost + dAtk;
+    const defTotal = battleState.defStrBase + battleState.defStrBoost + dDef;
 
     document.getElementById('battle-atk-total').textContent = `Total: ${atkTotal}`;
     document.getElementById('battle-def-total').textContent = `Total: ${defTotal}`;
@@ -876,14 +1096,14 @@ function finalizeBattle() {
         resDiv.style.color = '#2ecc71';
         // Eliminar defensor
         const enemy = currentPlayer === 'red' ? 'green' : 'red';
-        getShipsAt(battleState.defKey)[enemy] = [];
-        showStatus('Has ganado la batalla. Flota enemiga destruida.');
+        const escaped = handleFleetDestruction(battleState.defKey, enemy);
+        showStatus(escaped ? `¡Ganaste! La flota explotó pero el enemigo evacuó una nave salvífica. ${enemy === 'red' ? 'Rojo' : 'Verde'} debe reubicarla (casillas azules).` : 'Has ganado la batalla.');
     } else if (defTotal > atkTotal) {
         resDiv.textContent = '💀 DERROTA';
         resDiv.style.color = '#e74c3c';
         // Eliminar atacante
-        getShipsAt(battleState.atkKey)[currentPlayer] = [];
-        showStatus('Has perdido la batalla. Tu flota ha sido destruida.');
+        const escaped = handleFleetDestruction(battleState.atkKey, currentPlayer);
+        showStatus(escaped ? `Has perdido la batalla, ¡pero rescataste una cápsula de escape! Cierra la batalla y salva tu nave haciendo clic en tu rango de huida azul.` : 'Has perdido la batalla.');
     } else {
         resDiv.textContent = '⚖️ EMPATE - Se repite';
         resDiv.style.color = '#f5c518';
@@ -896,6 +1116,40 @@ function finalizeBattle() {
     renderShips();
     updatePlanetOwnership();
     saveGame();
+}
+
+function handleFleetDestruction(key, losingPlayer) {
+    const fleet = getShipsAt(key)[losingPlayer];
+
+    // Probabilidad subida a 6/6 por petición del usuario: ¡100% garantizado!
+    const miracle = (fleet.length > 0);
+
+    if (miracle) {
+        // Elegimos una nave al azar para que se salve
+        const survivorIdx = Math.floor(Math.random() * fleet.length);
+        const survivor = fleet[survivorIdx];
+
+        // Calculamos rango de escape de 2
+        const reachable = calculateReachableCells(key, 2);
+
+        if (reachable.size > 0) {
+            escapeState = {
+                player: losingPlayer,
+                shipToSave: survivor,
+                validDestinations: reachable
+            };
+
+            // Borramos la flota original
+            fleet.splice(0, fleet.length);
+            highlightCells(Array.from(reachable), 'cell-highlight-move');
+
+            return true; // No borramos la instancia general porque la nave está fugitiva en RAM
+        }
+    }
+
+    // Muerte normal
+    fleet.splice(0, fleet.length);
+    return false;
 }
 
 function closeBattleModal() {
