@@ -33,6 +33,8 @@ const PLANETS = {
     '5,5': { type: 'rich', income: 2, defaultOwner: null },
     '1,1': { type: 'home-red', income: 1, defaultOwner: 'red' },
     '9,9': { type: 'home-green', income: 1, defaultOwner: 'green' },
+    '0,0': { type: 'main-base-red', income: 1, defaultOwner: 'red' },
+    '10,10': { type: 'main-base-green', income: 1, defaultOwner: 'green' },
 };
 
 // Propietario actual de cada planeta (se actualiza cuando entran/salen naves)
@@ -54,6 +56,7 @@ let pendingShip = null;   // nave recién comprada esperando colocación
 let moveState = null;   // { fromKey, selectedIndices: Set, step: 'pick'|'dest', reachable: Set }
 let battleState = null;   // { fromKey, enemies: [key], step: 'select_target' | 'rolling' }
 let escapeState = null;   // { player, shipToSave, validDestinations: Set }
+let planetBoosts = {};    // { "q,r": number | 'infinite' }
 
 // ── Helpers ───────────────────────────────────
 
@@ -110,27 +113,29 @@ function renderShips() {
         g.style.pointerEvents = 'none';
 
         if (rc > 0) {
+            const hasBlock = data.red.some(s => (s.blockedRounds || 0) > 0);
             const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             t.setAttribute('x', cx - (gc > 0 ? 9 : 0));
             t.setAttribute('y', cy + 5);
             t.setAttribute('text-anchor', 'middle');
             t.setAttribute('font-size', '11');
             t.setAttribute('font-weight', 'bold');
-            t.setAttribute('fill', '#ff6b6b');
+            t.setAttribute('fill', hasBlock ? '#e74c3c' : '#ff6b6b');
             t.setAttribute('font-family', 'Outfit, sans-serif');
-            t.textContent = `▲${rc}`;
+            t.textContent = hasBlock ? `🔒${rc}` : `▲${rc}`;
             g.appendChild(t);
         }
         if (gc > 0) {
+            const hasBlock = data.green.some(s => (s.blockedRounds || 0) > 0);
             const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             t.setAttribute('x', cx + (rc > 0 ? 9 : 0));
             t.setAttribute('y', cy + 5);
             t.setAttribute('text-anchor', 'middle');
             t.setAttribute('font-size', '11');
             t.setAttribute('font-weight', 'bold');
-            t.setAttribute('fill', '#2ecc71');
+            t.setAttribute('fill', hasBlock ? '#27ae60' : '#2ecc71');
             t.setAttribute('font-family', 'Outfit, sans-serif');
-            t.textContent = `▲${gc}`;
+            t.textContent = hasBlock ? `🔒${gc}` : `▲${gc}`;
             g.appendChild(t);
         }
         svg.appendChild(g);
@@ -235,10 +240,18 @@ function endTurn() {
         cancelCardEffect();
     }
 
-    // Reset moved flags
+    // Reset moved flags and pass time for blockers
     for (const key of Object.keys(ships)) {
-        ships[key].red.forEach(s => { s.moved = false; s.boosted = false; });
-        ships[key].green.forEach(s => { s.moved = false; s.boosted = false; });
+        ships[key].red.forEach(s => {
+            s.moved = false;
+            s.boosted = false;
+            if (currentPlayer === 'red' && s.blockedRounds > 0) s.blockedRounds--;
+        });
+        ships[key].green.forEach(s => {
+            s.moved = false;
+            s.boosted = false;
+            if (currentPlayer === 'green' && s.blockedRounds > 0) s.blockedRounds--;
+        });
     }
     pendingShip = null;
     moveState = null;
@@ -267,8 +280,11 @@ function saveGame() {
         ships,
         coins,
         planetOwnership,
-        // movedThisTurn no se guarda porque se resetea al cambiar turno, 
-        // y si recargas a mitad de turno, se asume que puedes mover de nuevo (o guardamos si queremos ser estrictos)
+        planetBoosts,
+        cardDeck: typeof cardDeck !== 'undefined' ? cardDeck : [],
+        cardDiscard: typeof cardDiscard !== 'undefined' ? cardDiscard : [],
+        playerHands: typeof playerHands !== 'undefined' ? playerHands : { red: [], green: [] },
+        activeCardEffect: typeof activeCardEffect !== 'undefined' ? activeCardEffect : null
     };
     localStorage.setItem('hexGameState', JSON.stringify(state));
 }
@@ -282,6 +298,39 @@ function loadGame() {
         Object.assign(ships, state.ships);
         Object.assign(coins, state.coins);
         Object.assign(planetOwnership, state.planetOwnership);
+        if (state.planetBoosts) Object.assign(planetBoosts, state.planetBoosts);
+
+        // Cargar estado de cartas si existe mutando internamente sin romper punteros iniciales
+        if (state.cardDeck) {
+            cardDeck.splice(0, cardDeck.length, ...state.cardDeck);
+        }
+        if (state.cardDiscard) {
+            cardDiscard.splice(0, cardDiscard.length, ...state.cardDiscard);
+        }
+        if (state.playerHands) {
+            if (state.playerHands.red) {
+                playerHands.red.splice(0, playerHands.red.length, ...state.playerHands.red);
+            }
+            if (state.playerHands.green) {
+                playerHands.green.splice(0, playerHands.green.length, ...state.playerHands.green);
+            }
+        }
+
+        if (state.activeCardEffect !== undefined) {
+            activeCardEffect = state.activeCardEffect;
+            if (activeCardEffect) {
+                setTimeout(() => {
+                    let instructionText = 'Selecciona una flota para moverla con alcance ampliado.';
+                    if (activeCardEffect.effect && activeCardEffect.effect.type === 'production_boost') {
+                        instructionText = 'Haz clic en un planeta de la zona neutral (coloreado) que controles.';
+                    } else if (activeCardEffect.effect && activeCardEffect.effect.type === 'sabotage') {
+                        instructionText = 'Haz clic en cualquier planeta con un depósito activo para volarlo por los aires.';
+                    }
+                    showStatus(`✨ Carta "${activeCardEffect.name}" ACTIVADA. ${instructionText} <button class="move-cancel-btn" style="padding:4px 8px; margin-left:10px" onclick="cancelCardEffect()">✖ Cancelar Carta</button>`, true);
+                }, 150);
+            }
+        }
+
         return true;
     } catch (e) {
         console.error('Error loading game:', e);
@@ -309,7 +358,11 @@ function updatePlanetOwnership() {
         const hasRed = data.red.length > 0;
         const hasGreen = data.green.length > 0;
 
-        if (planet.type === 'home-red') {
+        if (planet.type === 'main-base-red') {
+            planetOwnership[key] = 'red'; // Inexpugnable
+        } else if (planet.type === 'main-base-green') {
+            planetOwnership[key] = 'green'; // Inexpugnable
+        } else if (planet.type === 'home-red') {
             // Verde conquista si tiene naves; si no, rojo es dueño por defecto
             planetOwnership[key] = hasGreen ? 'green' : 'red';
         } else if (planet.type === 'home-green') {
@@ -330,16 +383,32 @@ function updatePlanetOwnership() {
  */
 function collectPlanetIncome() {
     let earned = 0;
+    let extraEarned = 0;
     for (const [key, planet] of Object.entries(PLANETS)) {
         if (planetOwnership[key] === currentPlayer) {
             earned += planet.income;
+
+            if (planetBoosts[key]) {
+                if (planetBoosts[key] === 'infinite') {
+                    extraEarned += planet.income;
+                } else {
+                    const amountToTake = Math.min(planet.income, planetBoosts[key]);
+                    extraEarned += amountToTake;
+                    planetBoosts[key] -= amountToTake;
+                    if (planetBoosts[key] <= 0) {
+                        delete planetBoosts[key];
+                    }
+                }
+            }
         }
     }
-    if (earned > 0) {
-        addCoins(currentPlayer, earned);
+    const total = earned + extraEarned;
+    if (total > 0) {
+        addCoins(currentPlayer, total);
         const name = currentPlayer === 'red' ? 'Rojo' : 'Verde';
-        showStatus(`💰 Jugador ${name} recibe ${earned} moneda(s) de sus planetas.`);
+        showStatus(`💰 Jugador ${name} recibe ${total} moneda(s) de sus planetas (Base: ${earned}, Extra minería: ${extraEarned}).`);
     }
+    renderPlanets();
 }
 
 /**
@@ -386,6 +455,22 @@ function renderPlanets() {
         inner.setAttribute('stroke-linejoin', 'round');
         g.appendChild(inner);
 
+        if (planetBoosts[key]) {
+            const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            t.setAttribute('x', cx);
+            t.setAttribute('y', cy - 12);
+            t.setAttribute('text-anchor', 'middle');
+            t.setAttribute('font-size', '14');
+            t.setAttribute('font-weight', 'bold');
+            t.setAttribute('fill', '#f1c40f');
+            t.setAttribute('stroke', '#000');
+            t.setAttribute('stroke-width', '3');
+            t.setAttribute('paint-order', 'stroke');
+            t.setAttribute('font-family', 'Outfit, sans-serif');
+            t.textContent = planetBoosts[key] === 'infinite' ? '+∞🪙' : `+${planetBoosts[key]}🪙`;
+            g.appendChild(t);
+        }
+
         svg.appendChild(g);
     }
 }
@@ -421,8 +506,20 @@ function startBuyShip(ship) {
     if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
 
     pendingShip = ship;
-    highlightCells(SPAWN_CELLS[currentPlayer], 'cell-highlight-spawn');
-    showStatus(`Elige una casilla de inicio para colocar ${ship.label} (💰 ${ship.cost})`);
+
+    let validSpawnCells = [...SPAWN_CELLS[currentPlayer]];
+
+    // Si la carta despliegue avanzado está activa, sumamos zonas neutrales dominadas
+    if (typeof activeCardEffect !== 'undefined' && activeCardEffect && activeCardEffect.effect && activeCardEffect.effect.type === 'deploy_neutral') {
+        Object.keys(planetOwnership).forEach(key => {
+            if (planetOwnership[key] === currentPlayer && PLANETS[key] && PLANETS[key].type === 'normal') {
+                if (!validSpawnCells.includes(key)) validSpawnCells.push(key);
+            }
+        });
+    }
+
+    highlightCells(validSpawnCells, 'cell-highlight-spawn');
+    showStatus(`Elige una casilla iluminada para desplegar ${ship.label} (💰 ${ship.cost})`);
 
     // Cerramos el modal de tienda automáticamente para comodidad del jugador
     if (typeof closeShopModal === 'function') closeShopModal();
@@ -431,23 +528,52 @@ function startBuyShip(ship) {
 function placePurchasedShip(key) {
     if (!pendingShip) return false;
 
-    // Regla normal de colocación (Solo en debug se permite colocar en cualquier parte)
-    if (!debugMode && !SPAWN_CELLS[currentPlayer].includes(key)) {
-        showStatus('❌ Compra cancelada (Casilla fuera de base).');
+    let validSpawnCells = [...SPAWN_CELLS[currentPlayer]];
+
+    if (typeof activeCardEffect !== 'undefined' && activeCardEffect && activeCardEffect.effect && activeCardEffect.effect.type === 'deploy_neutral') {
+        Object.keys(planetOwnership).forEach(k => {
+            if (planetOwnership[k] === currentPlayer && PLANETS[k] && PLANETS[k].type === 'normal') {
+                if (!validSpawnCells.includes(k)) validSpawnCells.push(k);
+            }
+        });
+    }
+
+    if (!debugMode && !validSpawnCells.includes(key)) {
+        showStatus('❌ Compra/despliegue cancelado (fuera de rango permitido).');
+        if (pendingShip && pendingShip.isFreeCard) {
+            returnFreeShipCard(pendingShip.cardRef);
+        }
         pendingShip = null;
         clearHighlights('cell-highlight-spawn');
         return true;
     }
 
     if (totalShipsAt(key) >= MAX_SHIPS_PER_CELL) {
-        showStatus('❌ Compra cancelada (Casilla llena, máximo 5 naves).');
+        showStatus('❌ Despliegue cancelado (Casilla llena, máximo 5 naves).');
+        if (pendingShip && pendingShip.isFreeCard) {
+            returnFreeShipCard(pendingShip.cardRef);
+        }
         pendingShip = null;
         clearHighlights('cell-highlight-spawn');
         return true;
     }
 
     addCoins(currentPlayer, -pendingShip.cost);
-    getShipsAt(key)[currentPlayer].push({ level: pendingShip.level, moved: false });
+    getShipsAt(key)[currentPlayer].push({ level: pendingShip.level, moved: true });
+
+    // Consumir carta de despliegue neutral clásico si fue usada (y la nave no era ya una free_card)
+    if (typeof activeCardEffect !== 'undefined' && activeCardEffect && activeCardEffect.effect && activeCardEffect.effect.type === 'deploy_neutral' && !SPAWN_CELLS[currentPlayer].includes(key)) {
+        if (typeof cardDiscard !== 'undefined') cardDiscard.push(activeCardEffect.id);
+        const cardName = activeCardEffect.name;
+        activeCardEffect = null;
+        showStatus(`🛸 Despliegue Avanzado: ${pendingShip.label} asentada en la frontera neutral con éxito. Carta consumida: ${cardName}.`);
+        if (typeof renderCardArea === 'function') renderCardArea();
+    } else if (pendingShip && pendingShip.isFreeCard) {
+        // En caso de nave gratis normal 
+        showStatus(`🚀 ¡Refuerzos gratis aterrizados! (${pendingShip.label})`);
+        if (typeof renderCardArea === 'function') renderCardArea();
+    }
+
     clearHighlights('cell-highlight-spawn');
     pendingShip = null;
     renderShips();
@@ -468,9 +594,9 @@ function startMove(key) {
 
     const isBoostActive = (typeof activeCardEffect !== 'undefined' && activeCardEffect && activeCardEffect.effect && activeCardEffect.effect.type === 'movement_boost');
 
-    const movable = myShips.filter(s => !s.boosted && (!s.moved || isBoostActive));
+    const movable = myShips.filter(s => (s.blockedRounds || 0) === 0 && !s.boosted && (!s.moved || isBoostActive));
     if (movable.length === 0) {
-        showStatus('Las naves de esta casilla ya no pueden moverse ni recibir más impulsos.');
+        showStatus('Las naves de esta casilla ya no pueden moverse (congeladas o sin impulsos).');
         return true;
     }
 
@@ -483,7 +609,7 @@ function startMove(key) {
     if (srcCell) srcCell.classList.add('cell-selected');
 
     // Auto-seleccionar todas las naves movibles
-    const allIndices = myShips.map((s, i) => (!s.boosted && (!s.moved || isBoostActive) ? i : -1)).filter(i => i >= 0);
+    const allIndices = myShips.map((s, i) => ((s.blockedRounds || 0) === 0 && !s.boosted && (!s.moved || isBoostActive) ? i : -1)).filter(i => i >= 0);
     applyMoveDestination(allIndices);
 
     // Si hay más de 1 nave movible, mostrar botón "Dividir"
@@ -515,10 +641,12 @@ function showPickModal(key, myShips) {
 
     let rows = myShips.map((s, i) => {
         const t = shipLabel(s);
-        const disabled = (s.boosted || (s.moved && !isBoostActive)) ? 'disabled' : '';
-        const movedTag = s.boosted ? '<span class="tt-moved" style="color:#3498db;">impulsada</span>' :
-            s.moved ? '<span class="tt-moved">ya movida</span>' : '';
-        return `<label class="ship-pick-row ${(s.boosted || (s.moved && !isBoostActive)) ? 'ship-moved' : ''}">
+        const isBlocked = (s.blockedRounds || 0) > 0;
+        const disabled = (isBlocked || s.boosted || (s.moved && !isBoostActive)) ? 'disabled' : '';
+        const movedTag = isBlocked ? '<span class="tt-moved" style="color:#e74c3c; border-color:#e74c3c;">🔒 Bloqueada</span>' :
+            s.boosted ? '<span class="tt-moved" style="color:#3498db;">impulsada</span>' :
+                s.moved ? '<span class="tt-moved">ya movida</span>' : '';
+        return `<label class="ship-pick-row ${(disabled) ? 'ship-moved' : ''}">
       <input type="checkbox" class="ship-pick-cb" data-idx="${i}" ${disabled} onchange="onPickChange()">
       <span>${t.icon} ${t.label} ${movedTag}</span>
     </label>`;
@@ -751,13 +879,17 @@ function skipBattle() {
 
 
 function cancelMove() {
+    if (pendingShip && pendingShip.isFreeCard) {
+        returnFreeShipCard(pendingShip.cardRef);
+    }
+
     moveState = null;
     pendingShip = null;
     clearHighlights('cell-highlight-move');
     clearHighlights('cell-highlight-spawn');
     clearHighlights('cell-selected');
 
-    // Si cancela, devolvemos la carta active a la mano a menos que se trate del turno del rival
+    // Si cancela, devolvemos la carta activa a la mano a menos que se trate del turno militar del rival
     if (typeof activeCardEffect !== 'undefined' && activeCardEffect && typeof cancelCardEffect === 'function' && activeCardEffect.owner === currentPlayer) {
         cancelCardEffect();
     }
@@ -767,6 +899,25 @@ function cancelMove() {
     const panel = document.getElementById('move-panel');
     if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
     showStatus('');
+}
+
+function returnFreeShipCard(cardId) {
+    // Si cancelamos la colocación de la nave gratuita, recuperamos la carta desde el descarte a la mano
+    if (typeof cardDiscard !== 'undefined' && typeof playerHands !== 'undefined') {
+        const discardIdx = cardDiscard.indexOf(cardId);
+        if (discardIdx !== -1) {
+            // Eliminar del descarte
+            cardDiscard.splice(discardIdx, 1);
+
+            // Buscar la carta original en el mazo base para reciclarla
+            const originalCard = typeof CARD_DECK_DEF !== 'undefined' ? CARD_DECK_DEF.find(c => c.id === cardId) : null;
+            if (originalCard) {
+                playerHands[currentPlayer].push({ ...originalCard, owner: currentPlayer });
+                if (typeof renderCardArea === 'function') renderCardArea();
+                saveGame();
+            }
+        }
+    }
 }
 
 // ── Status ────────────────────────────────────
@@ -866,6 +1017,7 @@ function debugGiveCard() {
 
     if (typeof renderCardArea === 'function') renderCardArea();
     showStatus(`🃏 Añadida carta de debug: ${randomCard.name}`);
+    saveGame();
 }
 
 function onGameCellClick(key) {
@@ -909,6 +1061,110 @@ function onGameCellClick(key) {
         }
         return;
     }
+
+    // Manejar uso de carta económica o sabotaje
+    if (typeof activeCardEffect !== 'undefined' && activeCardEffect) {
+        if (activeCardEffect.effect && activeCardEffect.effect.type === 'production_boost') {
+            if (!PLANETS[key] || PLANETS[key].type.startsWith('home-')) {
+                if (typeof cancelCardEffect === 'function') cancelCardEffect('⚠️ Acción cancelada: Debes usar el potenciador en un planeta de la zona neutral (gris o central).');
+                return;
+            }
+            if (planetOwnership[key] !== currentPlayer) {
+                if (typeof cancelCardEffect === 'function') cancelCardEffect('⚠️ Acción cancelada: Debes controlar el planeta (tener naves ahí) para instalar el potenciador.');
+                return;
+            }
+
+            const income = PLANETS[key].income;
+            const r = activeCardEffect.effect.value;
+
+            if (r === 'infinite') {
+                planetBoosts[key] = 'infinite';
+            } else {
+                const boostVal = (r * income) + 3;
+                let current = planetBoosts[key];
+                if (current === 'infinite') current = 0;
+                planetBoosts[key] = (current || 0) + boostVal;
+            }
+
+            if (typeof cardDiscard !== 'undefined') cardDiscard.push(activeCardEffect.id);
+            const cardName = activeCardEffect.name;
+            activeCardEffect = null;
+            showStatus(`✅ Potenciador "${cardName}" instalado en el planeta. Producción duplicada activa.`);
+            renderPlanets();
+            if (typeof renderCardArea === 'function') renderCardArea();
+            saveGame();
+            return;
+        }
+
+        if (activeCardEffect.effect && activeCardEffect.effect.type === 'sabotage') {
+            if (!planetBoosts[key]) {
+                if (typeof cancelCardEffect === 'function') cancelCardEffect('⚠️ Acción cancelada: Ese planeta no tiene ningún depósito de monedas activo para sabotear.');
+                return;
+            }
+            if (planetOwnership[key] === currentPlayer) {
+                if (typeof cancelCardEffect === 'function') cancelCardEffect('⚠️ Acción cancelada: No puedes sabotear tu propia economía. ¡Sería un desperdicio!');
+                return;
+            }
+
+            delete planetBoosts[key];
+            if (typeof cardDiscard !== 'undefined') cardDiscard.push(activeCardEffect.id);
+            const cardName = activeCardEffect.name;
+            activeCardEffect = null;
+            showStatus(`💥 Sabotaje "${cardName}" con éxito. El depósito de monedas enemigo ha sido destruido.`);
+            renderPlanets();
+            if (typeof renderCardArea === 'function') renderCardArea();
+            saveGame();
+            return;
+        }
+
+        if (activeCardEffect.effect && activeCardEffect.effect.type === 'ship_block') {
+            const enemy = currentPlayer === 'red' ? 'green' : 'red';
+            const enemyShips = getShipsAt(key)[enemy];
+
+            if (enemyShips.length === 0) {
+                if (typeof cancelCardEffect === 'function') cancelCardEffect('⚠️ Acción cancelada: No hay naves enemigas en esta casilla para bloquear.');
+                return;
+            }
+
+            const duration = activeCardEffect.effect.duration;
+            enemyShips.forEach(s => {
+                s.blockedRounds = (s.blockedRounds || 0) + duration;
+            });
+
+            if (typeof cardDiscard !== 'undefined') cardDiscard.push(activeCardEffect.id);
+            const cardName = activeCardEffect.name;
+            activeCardEffect = null;
+            showStatus(`🔒 Guerra electrónica instalada. La flota enemiga en (${key}) ha sido inhabilitada por ${duration} ronda(s).`);
+            renderShips();
+            if (typeof renderCardArea === 'function') renderCardArea();
+            saveGame();
+            return;
+        }
+
+        if (activeCardEffect.effect && activeCardEffect.effect.type === 'anti_block') {
+            const myShips = getShipsAt(key)[currentPlayer];
+            const blockedShips = myShips.filter(s => s.blockedRounds > 0);
+
+            if (blockedShips.length === 0) {
+                if (typeof cancelCardEffect === 'function') cancelCardEffect('⚠️ Acción cancelada: No tienes naves bloqueadas en esta casilla que necesiten purga.');
+                return;
+            }
+
+            myShips.forEach(s => {
+                s.blockedRounds = 0;
+            });
+
+            if (typeof cardDiscard !== 'undefined') cardDiscard.push(activeCardEffect.id);
+            const cardName = activeCardEffect.name;
+            activeCardEffect = null;
+            showStatus(`🔓 Desencriptación "${cardName}" exitosa. Tu flota en (${key}) recupera la movilidad total.`);
+            renderShips();
+            if (typeof renderCardArea === 'function') renderCardArea();
+            saveGame();
+            return;
+        }
+    }
+
     // 1. Colocar nave comprada
     if (pendingShip) {
         placePurchasedShip(key);
@@ -939,7 +1195,7 @@ function onGameCellClick(key) {
     // abortamos y te devolvemos la carta a la mano.
     if (!moveStarted && typeof activeCardEffect !== 'undefined' && activeCardEffect) {
         if (typeof cancelCardEffect === 'function') {
-            cancelCardEffect();
+            cancelCardEffect('⚠️ Acción cancelada: Casilla inválida para el uso de esta carta.');
         }
     }
 }
@@ -1094,16 +1350,34 @@ function finalizeBattle() {
     if (atkTotal > defTotal) {
         resDiv.textContent = '🏆 ¡VICTORIA!';
         resDiv.style.color = '#2ecc71';
-        // Eliminar defensor
-        const enemy = currentPlayer === 'red' ? 'green' : 'red';
-        const escaped = handleFleetDestruction(battleState.defKey, enemy);
-        showStatus(escaped ? `¡Ganaste! La flota explotó pero el enemigo evacuó una nave salvífica. ${enemy === 'red' ? 'Rojo' : 'Verde'} debe reubicarla (casillas azules).` : 'Has ganado la batalla.');
+
+        const winner = currentPlayer; // atacante
+        const enemy = winner === 'red' ? 'green' : 'red';
+        const winnerHand = playerHands[winner];
+        const stealIdx = winnerHand.findIndex(c => c.effect && c.effect.type === 'steal_ship');
+
+        if (stealIdx !== -1 && getShipsAt(battleState.defKey)[enemy].length > 0) {
+            handleStealShipPrompt(battleState.defKey, enemy, stealIdx, winner);
+        } else {
+            const escaped = handleFleetDestruction(battleState.defKey, enemy);
+            showStatus(escaped ? `¡Ganaste! La flota explotó pero el enemigo evacuó una nave salvífica. ${enemy === 'red' ? 'Rojo' : 'Verde'} debe reubicarla (casillas azules).` : 'Has ganado la batalla.');
+        }
+
     } else if (defTotal > atkTotal) {
         resDiv.textContent = '💀 DERROTA';
         resDiv.style.color = '#e74c3c';
-        // Eliminar atacante
-        const escaped = handleFleetDestruction(battleState.atkKey, currentPlayer);
-        showStatus(escaped ? `Has perdido la batalla, ¡pero rescataste una cápsula de escape! Cierra la batalla y salva tu nave haciendo clic en tu rango de huida azul.` : 'Has perdido la batalla.');
+
+        const winner = currentPlayer === 'red' ? 'green' : 'red'; // defensor
+        const enemy = currentPlayer;
+        const winnerHand = playerHands[winner];
+        const stealIdx = winnerHand.findIndex(c => c.effect && c.effect.type === 'steal_ship');
+
+        if (stealIdx !== -1 && getShipsAt(battleState.atkKey)[enemy].length > 0) {
+            handleStealShipPrompt(battleState.atkKey, enemy, stealIdx, winner);
+        } else {
+            const escaped = handleFleetDestruction(battleState.atkKey, enemy);
+            showStatus(escaped ? `Has perdido la batalla, ¡pero rescataste una cápsula de escape! Cierra la batalla y salva tu nave haciendo clic en tu rango de huida azul.` : 'Has perdido la batalla.');
+        }
     } else {
         resDiv.textContent = '⚖️ EMPATE - Se repite';
         resDiv.style.color = '#f5c518';
@@ -1118,11 +1392,78 @@ function finalizeBattle() {
     saveGame();
 }
 
+let pendingSteal = null;
+
+function handleStealShipPrompt(key, losingPlayer, cardIdx, winningPlayer) {
+    const fleet = getShipsAt(key)[losingPlayer];
+    pendingSteal = { key, losingPlayer, cardIdx, winningPlayer };
+
+    const container = document.getElementById('steal-ships-container');
+    container.innerHTML = '';
+
+    fleet.forEach((ship, idx) => {
+        const type = SHIP_TYPES.find(t => t.level === ship.level);
+        const btn = document.createElement('button');
+        btn.className = 'battle-card-btn def';
+        btn.innerHTML = `<span style="font-size:1.5rem">${type ? type.icon : '🚀'}</span><br>${type ? type.label : 'Nave'} (NV ${ship.level})`;
+        btn.onclick = () => selectStealShip(idx);
+        container.appendChild(btn);
+    });
+
+    document.getElementById('steal-modal').style.display = 'flex';
+}
+
+function selectStealShip(shipIdx) {
+    if (!pendingSteal) return;
+    const { key, losingPlayer, cardIdx, winningPlayer } = pendingSteal;
+
+    const fleet = getShipsAt(key)[losingPlayer];
+    const [stolenShip] = fleet.splice(shipIdx, 1);
+
+    // Add to winner
+    getShipsAt(key)[winningPlayer].push({ level: stolenShip.level, moved: true, boosted: false });
+
+    // Consumir carta
+    if (typeof playerHands !== 'undefined') {
+        const [card] = playerHands[winningPlayer].splice(cardIdx, 1);
+        if (typeof cardDiscard !== 'undefined') cardDiscard.push(card.id);
+    }
+
+    // Destrucción del resto
+    const escaped = handleFleetDestruction(key, losingPlayer);
+    if (!escaped) {
+        showStatus(`¡Nave enemiga robada con éxito! El resto de la flota fue masacrada.`);
+    } else {
+        showStatus(`Robaste una nave enemiga. El resto de la flota explotó, pero evacuaron una cápsula.`);
+    }
+
+    document.getElementById('steal-modal').style.display = 'none';
+    pendingSteal = null;
+    renderShips();
+    updatePlanetOwnership();
+    if (typeof renderCardArea === 'function') renderCardArea();
+    saveGame();
+}
+
+function cancelStealShip() {
+    if (!pendingSteal) return;
+    const { key, losingPlayer } = pendingSteal;
+
+    const escaped = handleFleetDestruction(key, losingPlayer);
+    showStatus(escaped ? `Rechazaste el botín de guerra. El enemigo evacuó una nave salvífica.` : 'Batalla concluida totalmente. El enemigo ha sido ejecutado sin robos.');
+
+    document.getElementById('steal-modal').style.display = 'none';
+    pendingSteal = null;
+    renderShips();
+    updatePlanetOwnership();
+    saveGame();
+}
+
 function handleFleetDestruction(key, losingPlayer) {
     const fleet = getShipsAt(key)[losingPlayer];
 
-    // Probabilidad subida a 6/6 por petición del usuario: ¡100% garantizado!
-    const miracle = (fleet.length > 0);
+    // Probabilidad subida a 2/6 por petición del usuario (33.3% de escape)
+    const miracle = (fleet.length > 0) && (Math.random() < 2 / 6);
 
     if (miracle) {
         // Elegimos una nave al azar para que se salve
@@ -1168,9 +1509,16 @@ function getDiceIcon(val) {
 function initGame() {
     if (loadGame()) {
         showStatus('Partida cargada.');
+        if (typeof renderCardArea === 'function') renderCardArea();
     } else {
         showStatus('Nueva partida.');
+        if (typeof initCards === 'function') initCards();
     }
+
+    // Forzar actualización visual de monedas desde el estado cargado/inicializado
+    if (document.getElementById('coins-red')) document.getElementById('coins-red').textContent = coins.red;
+    if (document.getElementById('coins-green')) document.getElementById('coins-green').textContent = coins.green;
+
     updateTurnPanel();
     renderShips();
     setupHover();

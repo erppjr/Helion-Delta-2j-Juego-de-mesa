@@ -167,6 +167,33 @@
         </div>
     </div>
 
+    <!-- Modal de Espionaje -->
+    <div id="espionage-modal" class="modal-backdrop" style="display:none; z-index:10000;">
+        <div class="modal-content battle-content" style="max-width: 600px;">
+            <h2 class="battle-title" style="color: #9b59b6;">👁️ INFILTRACIÓN 👁️</h2>
+            <p style="text-align: center; color: #ecf0f1; margin-bottom: 20px;">Inteligencia obtenida sobre la mano del
+                enemigo:</p>
+            <div id="espionage-cards" class="battle-cards-container" style="justify-content: center; flex-wrap: wrap;">
+            </div>
+            <button class="modal-btn btn-cancel"
+                onclick="document.getElementById('espionage-modal').style.display = 'none'"
+                style="margin-top: 20px; width: 100%;">Cerrar Inteligencia</button>
+        </div>
+    </div>
+
+    <!-- Modal de Robo de Nave -->
+    <div id="steal-modal" class="modal-backdrop" style="display:none; z-index:11000;">
+        <div class="modal-content battle-content">
+            <h2 class="battle-title" style="color: #f39c12;">🧲 BOTÍN DE GUERRA 🧲</h2>
+            <p style="text-align: center; color: #ecf0f1; margin-bottom: 20px;">Selecciona una nave enemiga destruida
+                para asimilarla a tu flota:</p>
+            <div id="steal-ships-container"
+                style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-bottom: 25px;"></div>
+            <button class="modal-btn btn-cancel" onclick="cancelStealShip()" style="width: 100%;">No asimilar botín
+                (Cerrar)</button>
+        </div>
+    </div>
+
     <!-- Tooltip de naves -->
     <div id="ship-tooltip" class="ship-tooltip" style="display:none;"></div>
 
