@@ -49,6 +49,12 @@ for (const [key, p] of Object.entries(PLANETS)) {
 
 let currentPlayer = 'red';
 
+// Estadísticas de final de partida
+let gameStats = {
+    red: { shipsDestroyed: 0, planetsConquered: 0, shipsBought: 0, cardsPlayed: 0 },
+    green: { shipsDestroyed: 0, planetsConquered: 0, shipsBought: 0, cardsPlayed: 0 }
+};
+
 // ships["q,r"] = { red: [{level, moved},...], green: [{level, moved},...] }
 const ships = {};
 
@@ -114,28 +120,36 @@ function renderShips() {
 
         if (rc > 0) {
             const hasBlock = data.red.some(s => (s.blockedRounds || 0) > 0);
+            const maxLevel = Math.max(...data.red.map(s => s.level));
+            const shipDef = SHIP_TYPES.find(t => t.level === maxLevel);
+            const icon = shipDef ? shipDef.icon : '▲';
+
             const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            t.setAttribute('x', cx - (gc > 0 ? 9 : 0));
-            t.setAttribute('y', cy + 5);
+            t.setAttribute('x', cx - (gc > 0 ? 12 : 0));
+            t.setAttribute('y', cy + 6);
             t.setAttribute('text-anchor', 'middle');
-            t.setAttribute('font-size', '11');
+            t.setAttribute('font-size', '16');
             t.setAttribute('font-weight', 'bold');
             t.setAttribute('fill', hasBlock ? '#e74c3c' : '#ff6b6b');
             t.setAttribute('font-family', 'Outfit, sans-serif');
-            t.textContent = hasBlock ? `🔒${rc}` : `▲${rc}`;
+            t.textContent = hasBlock ? `🔒${icon}${rc}` : `${icon}${rc}`;
             g.appendChild(t);
         }
         if (gc > 0) {
             const hasBlock = data.green.some(s => (s.blockedRounds || 0) > 0);
+            const maxLevel = Math.max(...data.green.map(s => s.level));
+            const shipDef = SHIP_TYPES.find(t => t.level === maxLevel);
+            const icon = shipDef ? shipDef.icon : '▲';
+
             const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            t.setAttribute('x', cx + (rc > 0 ? 9 : 0));
-            t.setAttribute('y', cy + 5);
+            t.setAttribute('x', cx + (rc > 0 ? 12 : 0));
+            t.setAttribute('y', cy + 6);
             t.setAttribute('text-anchor', 'middle');
-            t.setAttribute('font-size', '11');
+            t.setAttribute('font-size', '16');
             t.setAttribute('font-weight', 'bold');
             t.setAttribute('fill', hasBlock ? '#27ae60' : '#2ecc71');
             t.setAttribute('font-family', 'Outfit, sans-serif');
-            t.textContent = hasBlock ? `🔒${gc}` : `▲${gc}`;
+            t.textContent = hasBlock ? `🔒${icon}${gc}` : `${icon}${gc}`;
             g.appendChild(t);
         }
         svg.appendChild(g);
@@ -284,7 +298,8 @@ function saveGame() {
         cardDeck: typeof cardDeck !== 'undefined' ? cardDeck : [],
         cardDiscard: typeof cardDiscard !== 'undefined' ? cardDiscard : [],
         playerHands: typeof playerHands !== 'undefined' ? playerHands : { red: [], green: [] },
-        activeCardEffect: typeof activeCardEffect !== 'undefined' ? activeCardEffect : null
+        activeCardEffect: typeof activeCardEffect !== 'undefined' ? activeCardEffect : null,
+        gameStats
     };
     localStorage.setItem('hexGameState', JSON.stringify(state));
 }
@@ -299,6 +314,7 @@ function loadGame() {
         Object.assign(coins, state.coins);
         Object.assign(planetOwnership, state.planetOwnership);
         if (state.planetBoosts) Object.assign(planetBoosts, state.planetBoosts);
+        if (state.gameStats) gameStats = state.gameStats;
 
         // Cargar estado de cartas si existe mutando internamente sin romper punteros iniciales
         if (state.cardDeck) {
@@ -325,6 +341,8 @@ function loadGame() {
                         instructionText = 'Haz clic en un planeta de la zona neutral (coloreado) que controles.';
                     } else if (activeCardEffect.effect && activeCardEffect.effect.type === 'sabotage') {
                         instructionText = 'Haz clic en cualquier planeta con un depósito activo para volarlo por los aires.';
+                    } else if (activeCardEffect.effect && activeCardEffect.effect.type === 'kamikaze') {
+                        instructionText = 'Selecciona una flota tuya para lanzarla en línea recta contra el enemigo e inmolarla.';
                     }
                     showStatus(`✨ Carta "${activeCardEffect.name}" ACTIVADA. ${instructionText} <button class="move-cancel-btn" style="padding:4px 8px; margin-left:10px" onclick="cancelCardEffect()">✖ Cancelar Carta</button>`, true);
                 }, 150);
@@ -370,9 +388,15 @@ function updatePlanetOwnership() {
             planetOwnership[key] = hasRed ? 'red' : 'green';
         } else {
             // Planetas normales/ricos: quien tenga naves lo posee; si ambos o ninguno → neutral
-            if (hasRed && !hasGreen) planetOwnership[key] = 'red';
-            else if (hasGreen && !hasRed) planetOwnership[key] = 'green';
-            else planetOwnership[key] = null; // neutral o conflicto
+            const oldOwner = planetOwnership[key];
+            let newOwner = null;
+            if (hasRed && !hasGreen) newOwner = 'red';
+            else if (hasGreen && !hasRed) newOwner = 'green';
+
+            if (newOwner !== null && newOwner !== oldOwner && newOwner !== PLANETS[key].defaultOwner) {
+                gameStats[newOwner].planetsConquered++;
+            }
+            planetOwnership[key] = newOwner;
         }
     }
     renderPlanets();
@@ -436,24 +460,47 @@ function renderPlanets() {
                 : '#555';
         const borderWidth = owner ? '2.5' : '1.5';
 
-        // Polígono interior: mismos ángulos que el hex original pero escalado desde el centro
-        const INNER_SCALE = 0.72;
-        const innerPts = pts.map(([x, y]) => [
-            cx + (x - cx) * INNER_SCALE,
-            cy + (y - cy) * INNER_SCALE,
-        ]).map(([x, y]) => `${x},${y}`).join(' ');
+        // Elegir la textura según el tipo de planeta
+        let imgSrc = 'assets/planets/earth.png';
+        if (planet.type === 'home-red' || planet.type === 'main-base-red') imgSrc = 'assets/planets/mars.png';
+        if (planet.type === 'home-green' || planet.type === 'main-base-green') imgSrc = 'assets/planets/ice.png';
+        if (planet.type === 'normal') imgSrc = Math.abs(q + r) % 2 === 0 ? 'assets/planets/earth.png' : 'assets/planets/ocean.png';
+        if (planet.type === 'rico') imgSrc = 'assets/planets/gas.png';
 
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.classList.add('planet-overlay');
         g.style.pointerEvents = 'none';
 
-        const inner = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-        inner.setAttribute('points', innerPts);
-        inner.setAttribute('fill', 'none');
-        inner.setAttribute('stroke', borderColor);
-        inner.setAttribute('stroke-width', borderWidth);
-        inner.setAttribute('stroke-linejoin', 'round');
-        g.appendChild(inner);
+        // Es importante borrar el color de fondo para que el planeta no se "tape"
+        // o tintinee en amarillo si coinciden:
+        if (cell.classList.contains('fixed-yellow')) {
+            cell.classList.remove('fixed-yellow');
+        }
+
+        // Marco circular para el dueño (el aura)
+        const aura = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        aura.setAttribute('cx', cx);
+        aura.setAttribute('cy', cy);
+        aura.setAttribute('r', HEX_SIZE * 1.02); // Ajustado para el nuevo tamaño intermedio
+        aura.setAttribute('fill', 'none');
+        aura.setAttribute('stroke', owner ? borderColor : 'rgba(255,255,255,0.1)');
+        aura.setAttribute('stroke-width', owner ? '4' : '1');
+        aura.setAttribute('stroke-dasharray', owner ? 'none' : '4,4');
+        g.appendChild(aura);
+
+        // Imagen vectorial del planeta (sutilmente superpuesta intermedio)
+        const imgSize = HEX_SIZE * 2.10;
+        const img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+        img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', imgSrc);
+        img.setAttribute('href', imgSrc);
+        img.setAttribute('x', cx - imgSize / 2);
+        img.setAttribute('y', cy - imgSize / 2);
+        img.setAttribute('width', imgSize);
+        img.setAttribute('height', imgSize);
+        img.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+        // Cortar la imagen a círculo perfecto para encajar (Se recorta más adentro para devorar los bordes blancos del PNG base)
+        img.style.clipPath = 'circle(49% at 50% 50%)';
+        g.appendChild(img);
 
         if (planetBoosts[key]) {
             const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -560,6 +607,7 @@ function placePurchasedShip(key) {
 
     addCoins(currentPlayer, -pendingShip.cost);
     getShipsAt(key)[currentPlayer].push({ level: pendingShip.level, moved: true });
+    gameStats[currentPlayer].shipsBought++;
 
     // Consumir carta de despliegue neutral clásico si fue usada (y la nave no era ya una free_card)
     if (typeof activeCardEffect !== 'undefined' && activeCardEffect && activeCardEffect.effect && activeCardEffect.effect.type === 'deploy_neutral' && !SPAWN_CELLS[currentPlayer].includes(key)) {
@@ -593,8 +641,9 @@ function startMove(key) {
     if (myShips.length === 0) return false;
 
     const isBoostActive = (typeof activeCardEffect !== 'undefined' && activeCardEffect && activeCardEffect.effect && activeCardEffect.effect.type === 'movement_boost');
+    const isKamikazeActive = (typeof activeCardEffect !== 'undefined' && activeCardEffect && activeCardEffect.effect && activeCardEffect.effect.type === 'kamikaze');
 
-    const movable = myShips.filter(s => (s.blockedRounds || 0) === 0 && !s.boosted && (!s.moved || isBoostActive));
+    const movable = myShips.filter(s => (s.blockedRounds || 0) === 0 && !s.boosted && (!s.moved || isBoostActive || isKamikazeActive));
     if (movable.length === 0) {
         showStatus('Las naves de esta casilla ya no pueden moverse (congeladas o sin impulsos).');
         return true;
@@ -609,7 +658,7 @@ function startMove(key) {
     if (srcCell) srcCell.classList.add('cell-selected');
 
     // Auto-seleccionar todas las naves movibles
-    const allIndices = myShips.map((s, i) => ((s.blockedRounds || 0) === 0 && !s.boosted && (!s.moved || isBoostActive) ? i : -1)).filter(i => i >= 0);
+    const allIndices = myShips.map((s, i) => ((s.blockedRounds || 0) === 0 && !s.boosted && (!s.moved || isBoostActive || isKamikazeActive) ? i : -1)).filter(i => i >= 0);
     applyMoveDestination(allIndices);
 
     // Si hay más de 1 nave movible, mostrar botón "Dividir"
@@ -709,8 +758,13 @@ function getFleetSpeed(shipIndices, fromKey) {
     let speed = minSpeed === 999 ? 1 : minSpeed;
 
     // Si hay una carta de mejora de movimiento activa, sumamos su valor
-    if (typeof activeCardEffect !== 'undefined' && activeCardEffect && activeCardEffect.effect && activeCardEffect.effect.type === 'movement_boost') {
-        speed += activeCardEffect.effect.value;
+    // Si hay una carta de mejora de movimiento activa o si es un Kamikaze (alcance máximo de la carta), sobrescribimos la velocidad.
+    if (typeof activeCardEffect !== 'undefined' && activeCardEffect && activeCardEffect.effect) {
+        if (activeCardEffect.effect.type === 'movement_boost') {
+            speed += activeCardEffect.effect.value;
+        } else if (activeCardEffect.effect.type === 'kamikaze') {
+            speed = activeCardEffect.effect.range;
+        }
     }
 
     return speed;
@@ -746,14 +800,44 @@ function calculateReachableCells(startKey, range) {
     return reachable;
 }
 
+function calculateLineCells(startKey, range) {
+    const reachable = new Set();
+    const [sq, sr] = startKey.split(',').map(Number);
+
+    // Vectores de dirección hexagonal (q, r)
+    const dirs = [
+        [1, 0], [1, -1], [0, -1],
+        [-1, 0], [-1, 1], [0, 1]
+    ];
+
+    dirs.forEach(dir => {
+        for (let i = 1; i <= range; i++) {
+            const dq = sq + dir[0] * i;
+            const dr = sr + dir[1] * i;
+            const key = `${dq},${dr}`;
+
+            // Si la celda no existe en el mapa paramos el rayo
+            if (!document.querySelector(`.hex-cell[data-q="${dq}"][data-r="${dr}"]`)) break;
+
+            // Para el Kamikaze, podemos pasar/aterrizar sobre naves enemigas.
+            // Si estuviéramos programando líneas de visión que se bloquean por planetas inexpugnables, aquí se pondría el break;
+            reachable.add(key);
+        }
+    });
+
+    return reachable;
+}
+
 // ── Confirm Move ──────────────────────────────
 
 function applyMoveDestination(indices) {
     moveState.selectedIndices = new Set(indices);
     moveState.step = 'dest';
 
+    const isKamikazeActive = (typeof activeCardEffect !== 'undefined' && activeCardEffect && activeCardEffect.effect && activeCardEffect.effect.type === 'kamikaze');
+
     const speed = getFleetSpeed(indices, moveState.fromKey);
-    const reachable = calculateReachableCells(moveState.fromKey, speed);
+    const reachable = isKamikazeActive ? calculateLineCells(moveState.fromKey, speed) : calculateReachableCells(moveState.fromKey, speed);
     moveState.reachable = reachable;
 
     // Cerrar modal y panel si estaban abiertos
@@ -782,24 +866,60 @@ function executeMove(destKey) {
     }
 
     const freeSlots = MAX_SHIPS_PER_CELL - totalShipsAt(destKey);
+    const isKamikazeActive = (typeof activeCardEffect !== 'undefined' && activeCardEffect && activeCardEffect.effect && activeCardEffect.effect.type === 'kamikaze');
+    const enemy = currentPlayer === 'red' ? 'green' : 'red';
+    const hasEnemy = getShipsAt(destKey)[enemy].length > 0;
 
-    if (freeSlots === 0) {
+    if (!isKamikazeActive && freeSlots === 0) {
         showStatus('¡Casilla destino llena!');
         return true;
     }
 
     const myShips = getShipsAt(moveState.fromKey)[currentPlayer];
     const indices = [...moveState.selectedIndices].sort((a, b) => b - a); // mayor a menor para splice seguro
-    const toMove = indices.slice(0, freeSlots).map(i => myShips[i]);
+
+    // Para Kamikaze ignoramos los slots libres ya que la nave se inmolará.
+    const maxToMove = isKamikazeActive ? indices.length : freeSlots;
+    const toMove = indices.slice(0, maxToMove).map(i => myShips[i]);
 
     // Quitar del origen (de mayor índice a menor)
-    indices.slice(0, freeSlots).sort((a, b) => b - a).forEach(i => myShips.splice(i, 1));
+    indices.slice(0, maxToMove).sort((a, b) => b - a).forEach(i => myShips.splice(i, 1));
 
     const isBoostActive = (typeof activeCardEffect !== 'undefined' && activeCardEffect && activeCardEffect.effect && activeCardEffect.effect.type === 'movement_boost');
 
-    // Añadir al destino marcadas como ya movidas y/o impulsadas
-    const dest = getShipsAt(destKey)[currentPlayer];
-    toMove.forEach(s => dest.push({ level: s.level, moved: true, boosted: isBoostActive ? true : (s.boosted || false) }));
+    // Resolución de Inmolación Kamikaze
+    if (isKamikazeActive) {
+        // Descartar la carta jugada
+        if (typeof cardDiscard !== 'undefined') cardDiscard.push(activeCardEffect.id);
+        const cardName = activeCardEffect.name;
+        activeCardEffect = null;
+
+        // Sumamos las bajas a nuestro oponente (porque nos hemos inmolado)
+        gameStats[enemy].shipsDestroyed += toMove.length;
+
+        if (hasEnemy) {
+            const enemyShips = getShipsAt(destKey)[enemy];
+            const probability = Math.min(enemyShips.length / 6, 5 / 6);
+
+            if (Math.random() <= probability) {
+                // Éxito: destruir nave aleatoria enemiga
+                const targetIdx = Math.floor(Math.random() * enemyShips.length);
+                enemyShips.splice(targetIdx, 1);
+                gameStats[currentPlayer].shipsDestroyed++;
+
+                showStatus(`🔥 ¡IMPACTO KAMIKAZE! ${toMove.length} de tus naves se inmolaron, destruyendo 1 nave rival en el asalto (${(probability * 100).toFixed(0)}% éxito). Carta: ${cardName}.`);
+            } else {
+                showStatus(`🧨 Kamikaze fallido: Tus ${toMove.length} naves se estrellaron sin llevarse por delante al enemigo. Carta: ${cardName}.`);
+            }
+        } else {
+            showStatus(`💨 Kamikaze malgastado: La nave se auto-destruyó en el vacío espacial. Carta: ${cardName}.`);
+        }
+
+    } else {
+        // Movimiento ordinario: Añadir al destino marcadas como ya movidas y/o impulsadas
+        const dest = getShipsAt(destKey)[currentPlayer];
+        toMove.forEach(s => dest.push({ level: s.level, moved: true, boosted: isBoostActive ? true : (s.boosted || false) }));
+    }
 
     clearHighlights('cell-highlight-move');
     clearHighlights('cell-selected');
@@ -1461,9 +1581,11 @@ function cancelStealShip() {
 
 function handleFleetDestruction(key, losingPlayer) {
     const fleet = getShipsAt(key)[losingPlayer];
+    const killCount = fleet.length;
+    const winningPlayer = losingPlayer === 'red' ? 'green' : 'red';
 
     // Probabilidad subida a 2/6 por petición del usuario (33.3% de escape)
-    const miracle = (fleet.length > 0) && (Math.random() < 2 / 6);
+    const miracle = (killCount > 0) && (Math.random() < 2 / 6);
 
     if (miracle) {
         // Elegimos una nave al azar para que se salve
@@ -1483,13 +1605,14 @@ function handleFleetDestruction(key, losingPlayer) {
             // Borramos la flota original
             fleet.splice(0, fleet.length);
             highlightCells(Array.from(reachable), 'cell-highlight-move');
-
+            gameStats[winningPlayer].shipsDestroyed += (killCount - 1);
             return true; // No borramos la instancia general porque la nave está fugitiva en RAM
         }
     }
 
     // Muerte normal
     fleet.splice(0, fleet.length);
+    gameStats[winningPlayer].shipsDestroyed += killCount;
     return false;
 }
 
@@ -1528,17 +1651,52 @@ function initGame() {
 function checkWinCondition() {
     // Rojo gana si ocupa 10,10 (Spawn Verde)
     if (ships['10,10'] && ships['10,10'].red.length > 0) {
-        alert('🏆 ¡JUGADOR ROJO GANA LA PARTIDA! Ha conquistado la base enemiga.');
-        resetGame();
+        showGameOverModal('red');
         return true;
     }
     // Verde gana si ocupa 0,0 (Spawn Rojo)
     if (ships['0,0'] && ships['0,0'].green.length > 0) {
-        alert('🏆 ¡JUGADOR VERDE GANA LA PARTIDA! Ha conquistado la base enemiga.');
-        resetGame();
+        showGameOverModal('green');
         return true;
     }
     return false;
+}
+
+function showGameOverModal(winner) {
+    const modal = document.getElementById('game-over-modal');
+    if (!modal) return;
+
+    // Título y Nombre
+    const title = document.getElementById('go-winner-title');
+    const subtitle = document.getElementById('go-winner-subtitle');
+
+    if (winner === 'red') {
+        title.textContent = '🏆 JUGADOR ROJO GANA 🏆';
+        title.style.color = '#ff4444';
+        subtitle.textContent = 'Ha conquistado la base enemiga y domina Helion Delta.';
+    } else {
+        title.textContent = '🏆 JUGADOR VERDE GANA 🏆';
+        title.style.color = '#2ecc71';
+        subtitle.textContent = 'Ha conquistado la base enemiga y domina Helion Delta.';
+    }
+
+    // Inyectar datos estadisticos - Rojo
+    document.getElementById('go-red-kills').textContent = gameStats.red.shipsDestroyed;
+    document.getElementById('go-red-planets').textContent = gameStats.red.planetsConquered;
+    document.getElementById('go-red-buys').textContent = gameStats.red.shipsBought;
+    document.getElementById('go-red-cards').textContent = gameStats.red.cardsPlayed;
+
+    // Inyectar datos estadisticos - Verde
+    document.getElementById('go-green-kills').textContent = gameStats.green.shipsDestroyed;
+    document.getElementById('go-green-planets').textContent = gameStats.green.planetsConquered;
+    document.getElementById('go-green-buys').textContent = gameStats.green.shipsBought;
+    document.getElementById('go-green-cards').textContent = gameStats.green.cardsPlayed;
+
+    // Eliminar el guardado automático para que no recargue en la victoria
+    localStorage.removeItem('hexGameState');
+
+    // Mostrar el modal
+    modal.style.display = 'flex';
 }
 
 

@@ -126,6 +126,10 @@ const CARD_DECK_DEF = [
     { id: 'ab_2', name: '🔓 Purga de Sistemas', description: 'Elimina al instante cualquier estado de bloqueo o sabotaje de movimiento sobre una de tus flotas afectadas.', effect: { type: 'anti_block' } },
     { id: 'ab_3', name: '🔓 Purga de Sistemas', description: 'Elimina al instante cualquier estado de bloqueo o sabotaje de movimiento sobre una de tus flotas afectadas.', effect: { type: 'anti_block' } },
 
+    // ── Cartas de Daño Directo (Kamikaze) ───────────────────
+    { id: 'k_1', name: '☄️ Kamikaze (Bowler)', description: 'Sacrifica una flota moviéndola hasta +3 hexágonos en estricta línea recta. Si choca contra una flota enemiga, se destruye y tiene N/6 probabilidades (N=naves rivales) de aniquilar una nave enemiga.', effect: { type: 'kamikaze', range: 3 } },
+    { id: 'k_2', name: '☄️ Kamikaze (Bowler)', description: 'Sacrifica una flota moviéndola hasta +3 hexágonos en estricta línea recta. Si choca contra una flota enemiga, se destruye y tiene N/6 probabilidades (N=naves rivales) de aniquilar una nave enemiga.', effect: { type: 'kamikaze', range: 3 } },
+    { id: 'k_3', name: '☄️ Kamikaze (Bowler)', description: 'Sacrifica una flota moviéndola hasta +3 hexágonos en estricta línea recta. Si choca contra una flota enemiga, se destruye y tiene N/6 probabilidades (N=naves rivales) de aniquilar una nave enemiga.', effect: { type: 'kamikaze', range: 3 } },
 ];
 
 // ── Estado en partida ─────────────────────────
@@ -256,6 +260,9 @@ function playCard(player, cardId) {
 
     // Quitar la carta de la mano y activar efecto
     const [card] = hand.splice(idx, 1);
+    if (typeof gameStats !== 'undefined') {
+        gameStats[player].cardsPlayed++;
+    }
 
     // Si la carta es de resolución instantánea (Swap de oros)
     if (card.effect && card.effect.type === 'swap_coins') {

@@ -52,6 +52,17 @@ Si ocurre el milagro:
 
 ---
 
+## 🏆 FIN DE PARTIDA Y ESTADÍSTICAS GLOBALES
+
+La encarnizada lucha concluye irreversiblemente cuando un jugador logra invadir la Base Inexpugnable de su oponente (`10,10` para el Rojo o `0,0` para el Verde). En ese momento se lanzará una **Pantalla Cinemática de Game Over**.
+El juego interrumpirá todo y mostrará al Ganador de la Partida acompañado de un riguroso Desglose Estadístico Cara-a-Cara entre la facción Roja y Verde, mostrando:
+1. **Naves enemigas destruidas** a lo largo de los innumerables combates territoriales (y la cacería de Kamikazes).
+2. **Planetas conquistados** y arrebatados a la neutralidad.
+3. **Naves compradas** en la tienda espacial y armadas.
+4. **Cartas Tácticas usadas** desde la propia mano.
+
+---
+
 ## 🃏 EL MAZO: CARTAS DE COMANDANTE Y ENGAÑOS
 Más allá del combate plano o la pura moneda, Helion Delta cuenta con un Sistema de Robo de Cartas que dictaminan habilidades de un solo uso que desbalancean la galaxia. Su precio son 4 Monedas, y cada jugador tiene Límite de **6 Cartas Máximo** en mano.
 
@@ -90,6 +101,9 @@ Pero ten cuidado: este Depósito y su oro extra no está atado a ti. Si un enemi
 **F. Sabotaje y Guerra Electrónica:**
 - **Bloqueo (1 y 2 Rondas):** Al activar esta carta y hacer clic sobre una casilla ocupada por naves enemigas, sus sistemas de salto se congelarán de golpe. Aparecerá un candado 🔒 sobre su icono en el mapa, y el rival se verá inhabilitado de mover o dividir esas naves en concreto hasta que termine su turno un número de veces igual a la severidad de la carta (8 Existencias).
 - **Anti Bloqueo (Purga de Sistemas):** Cómprate algo de paz mental. Si tu rival inmovilizó tus naves clave cerca del Nexo Central, usa esta carta sobre tu flota congelada para eliminar cualquier penalización de `Bloqueo` instantáneamente y poder mover (3 Existencias).
+
+**G. Cartas Daño Directo:**
+- **Kamikaze (Bowler):** Sacrifica una flota propia moviéndola de forma temeraria. A diferencia de las reglas de motor habituales, la carta Kamikaze exige al jugador trazar en Estricta Línea Recta (hasta 3 casillas de alcance). Al finalizar la recta y chocar contra otra escuadra, la nave Kamikaze explota. Existe una probabilidad dictaminada internamente por dados (N/6 donde N son las naves rivales avistadas) de que tu suicidio arrastre violentamente a una nave enemiga al azar. (3 Existencias).
 
 ---
 

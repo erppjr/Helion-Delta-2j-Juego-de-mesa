@@ -194,6 +194,45 @@
         </div>
     </div>
 
+    <!-- Modal de Fin de Partida (Game Over) -->
+    <div id="game-over-modal" class="modal-backdrop" style="display:none; z-index:15000; align-items:center;">
+        <div class="modal-content game-over-content" style="max-width: 800px; width: 90%;">
+            <h1 id="go-winner-title" class="go-title">🏆 GANADOR 🏆</h1>
+            <p id="go-winner-subtitle" class="go-subtitle">Ha conquistado la base enemiga y domina Helion Delta.</p>
+
+            <div class="go-stats-container">
+                <!-- Estadísticas Rojo -->
+                <div class="go-stats-side side-red">
+                    <h3 class="go-faction-title">Fracción Roja</h3>
+                    <div class="go-stat-row"><span class="go-stat-label">💥 Naves Destruidas</span><span
+                            id="go-red-kills" class="go-stat-val">0</span></div>
+                    <div class="go-stat-row"><span class="go-stat-label">🌍 Planetas Conquistados</span><span
+                            id="go-red-planets" class="go-stat-val">0</span></div>
+                    <div class="go-stat-row"><span class="go-stat-label">🚀 Naves Compradas</span><span id="go-red-buys"
+                            class="go-stat-val">0</span></div>
+                    <div class="go-stat-row"><span class="go-stat-label">🃏 Cartas Tácticas Usadas</span><span
+                            id="go-red-cards" class="go-stat-val">0</span></div>
+                </div>
+
+                <!-- Estadísticas Verde -->
+                <div class="go-stats-side side-green">
+                    <h3 class="go-faction-title">Fracción Verde</h3>
+                    <div class="go-stat-row"><span class="go-stat-label">💥 Naves Destruidas</span><span
+                            id="go-green-kills" class="go-stat-val">0</span></div>
+                    <div class="go-stat-row"><span class="go-stat-label">🌍 Planetas Conquistados</span><span
+                            id="go-green-planets" class="go-stat-val">0</span></div>
+                    <div class="go-stat-row"><span class="go-stat-label">🚀 Naves Compradas</span><span
+                            id="go-green-buys" class="go-stat-val">0</span></div>
+                    <div class="go-stat-row"><span class="go-stat-label">🃏 Cartas Tácticas Usadas</span><span
+                            id="go-green-cards" class="go-stat-val">0</span></div>
+                </div>
+            </div>
+
+            <button class="modal-btn btn-confirm go-restart-btn" onclick="resetGame()"
+                style="width: 100%; font-size: 1.2rem; padding: 15px;">🚀 NUEVA PARTIDA 🚀</button>
+        </div>
+    </div>
+
     <!-- Tooltip de naves -->
     <div id="ship-tooltip" class="ship-tooltip" style="display:none;"></div>
 
